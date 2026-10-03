@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { pool, initDb } from './db.js';
 import { authRouter } from './auth.js';
+import { teamsRouter, driversRouter } from './profiles.js';
 
 const app = express();
 app.use(cors());
@@ -17,6 +18,8 @@ app.get('/health', async (_req, res) => {
 });
 
 app.use('/auth', authRouter);
+app.use('/teams', teamsRouter);
+app.use('/drivers', driversRouter);
 
 const port = Number(process.env.PORT ?? 3000);
 await initDb();

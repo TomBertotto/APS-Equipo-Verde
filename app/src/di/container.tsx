@@ -1,17 +1,24 @@
 import { createContext, ReactNode, useContext } from 'react';
+import { ApiClient } from '../models/ApiClient';
 import { AuthService } from '../models/AuthService';
+import { ProfilesService } from '../models/ProfilesService';
 import { TokenStorage } from '../models/TokenStorage';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 export type Container = {
   authService: AuthService;
+  profilesService: ProfilesService;
   tokenStorage: TokenStorage;
 };
 
+const tokenStorage = new TokenStorage();
+const apiClient = new ApiClient(API_URL, tokenStorage);
+
 const defaultContainer: Container = {
-  authService: new AuthService(API_URL),
-  tokenStorage: new TokenStorage(),
+  authService: new AuthService(apiClient),
+  profilesService: new ProfilesService(apiClient),
+  tokenStorage,
 };
 
 const ContainerContext = createContext<Container>(defaultContainer);

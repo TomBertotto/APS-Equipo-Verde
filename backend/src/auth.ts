@@ -1,4 +1,4 @@
-import { Router, Request } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
 import { pool } from './db.js';
 
@@ -6,6 +6,27 @@ export const authRouter = Router();
 
 function getToken(req: Request) {
   return req.headers.authorization?.replace('Bearer ', '') ?? '';
+}
+
+async function getUserByToken(token: string) {
+  const result = await pool.query(
+    'SELECT u.id, u.username, u.role FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = $1',
+    [token],
+  );
+  return result.rows[0] as { id: number; username: string; role: string } | undefined;
+}
+
+export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  const user = await getUserByToken(getToken(req));
+  if (!user) {
+    res.status(401).json({ error: 'No autenticado' });
+    return;
+  }
+  if (user.role !== 'admin') {
+    res.status(403).json({ error: 'Acceso denegado' });
+    return;
+  }
+  next();
 }
 
 async function createSession(userId: number) {
@@ -26,17 +47,17 @@ authRouter.post('/register', async (req, res) => {
     return;
   }
   const result = await pool.query(
-    'INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id',
+    'INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id, role',
     [username, password],
   );
   const token = await createSession(result.rows[0].id);
-  res.json({ token, username });
+  res.json({ token, username, role: result.rows[0].role });
 });
 
 authRouter.post('/login', async (req, res) => {
   const { username, password } = req.body;
   const result = await pool.query(
-    'SELECT id FROM users WHERE username = $1 AND password = $2',
+    'SELECT id, role FROM users WHERE username = $1 AND password = $2',
     [username, password],
   );
   if (!result.rowCount) {
@@ -44,7 +65,7 @@ authRouter.post('/login', async (req, res) => {
     return;
   }
   const token = await createSession(result.rows[0].id);
-  res.json({ token, username });
+  res.json({ token, username, role: result.rows[0].role });
 });
 
 authRouter.post('/logout', async (req, res) => {
@@ -53,13 +74,10 @@ authRouter.post('/logout', async (req, res) => {
 });
 
 authRouter.get('/me', async (req, res) => {
-  const result = await pool.query(
-    'SELECT u.username FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = $1',
-    [getToken(req)],
-  );
-  if (!result.rowCount) {
+  const user = await getUserByToken(getToken(req));
+  if (!user) {
     res.status(401).json({ error: 'No autenticado' });
     return;
   }
-  res.json({ username: result.rows[0].username });
+  res.json({ username: user.username, role: user.role });
 });

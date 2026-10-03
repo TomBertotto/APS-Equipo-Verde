@@ -1,23 +1,22 @@
 import { useCallback, useState } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { useContainer } from '../di/container';
+import { User } from '../models/AuthService';
 
 export function useAuthViewModel() {
   const { authService, tokenStorage } = useContainer();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
       (async () => {
-        const token = await tokenStorage.get();
-        if (token) {
+        if (await tokenStorage.get()) {
           try {
-            const me = await authService.me(token);
-            setCurrentUser(me.username);
+            setCurrentUser(await authService.me());
           } catch {
             await tokenStorage.clear();
           }
@@ -38,7 +37,7 @@ export function useAuthViewModel() {
     try {
       const session = await authService.login(username, password);
       await tokenStorage.set(session.token);
-      setCurrentUser(session.username);
+      setCurrentUser({ username: session.username, role: session.role });
       clearForm();
     } catch (err) {
       setError((err as Error).message);
@@ -46,8 +45,7 @@ export function useAuthViewModel() {
   }
 
   async function logout() {
-    const token = await tokenStorage.get();
-    if (token) await authService.logout(token).catch(() => {});
+    await authService.logout().catch(() => {});
     await tokenStorage.clear();
     setCurrentUser(null);
   }
@@ -57,16 +55,22 @@ export function useAuthViewModel() {
     router.push('/register');
   }
 
+  function goToAdmin() {
+    router.push('/admin');
+  }
+
   return {
     username,
     setUsername,
     password,
     setPassword,
     currentUser,
+    isAdmin: currentUser?.role === 'admin',
     error,
     loading,
     login,
     logout,
     goToRegister,
+    goToAdmin,
   };
 }

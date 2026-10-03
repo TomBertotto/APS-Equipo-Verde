@@ -7,6 +7,7 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="index" options={{ title: 'FIA Connect' }} />
         <Stack.Screen name="register" options={{ title: 'Registrarse' }} />
+        <Stack.Screen name="admin" options={{ title: 'Administrar perfiles' }} />
       </Stack>
     </ContainerProvider>
   );
