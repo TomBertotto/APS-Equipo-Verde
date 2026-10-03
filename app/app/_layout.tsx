@@ -9,6 +9,7 @@ export default function RootLayout() {
         <Stack.Screen name="register" options={{ title: 'Registrarse' }} />
         <Stack.Screen name="admin" options={{ title: 'Administrar perfiles' }} />
         <Stack.Screen name="access" options={{ title: 'Usuarios y permisos' }} />
+        <Stack.Screen name="calendar" options={{ title: 'Calendario' }} />
         <Stack.Screen name="calendar-admin" options={{ title: 'Gestionar calendario' }} />
       </Stack>
     </ContainerProvider>

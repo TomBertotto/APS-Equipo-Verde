@@ -27,6 +27,7 @@ export default function Home() {
           {vm.can('calendar.manage') ? (
             <Button title="Gestionar calendario" onPress={vm.goToCalendarAdmin} />
           ) : null}
+          <Button title="Ver calendario" onPress={vm.goToCalendar} />
           <Button title="Cerrar sesión" onPress={vm.logout} />
         </View>
       </View>
@@ -53,6 +54,7 @@ export default function Home() {
         {vm.error ? <Text style={styles.error}>{vm.error}</Text> : null}
         <Button title="Iniciar sesión" onPress={vm.login} />
         <Button title="Registrarse" onPress={vm.goToRegister} />
+        <Button title="Ver calendario" onPress={vm.goToCalendar} />
       </View>
     </View>
   );

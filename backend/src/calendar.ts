@@ -19,14 +19,55 @@ function validateEvent(name: unknown, date: unknown, time: unknown) {
   return '';
 }
 
-eventsRouter.get('/', async (_req, res) => {
+async function listEvents() {
   const result = await pool.query(`
     SELECT id, name, circuit, location, category, event_date, event_time, status, notes
     FROM events
     WHERE deleted_at IS NULL
     ORDER BY event_date ASC, event_time ASC NULLS LAST, id ASC
   `);
-  res.json(result.rows);
+  return result.rows;
+}
+
+const ICS_STATUS: Record<string, string> = {
+  scheduled: 'CONFIRMED',
+  completed: 'CONFIRMED',
+  postponed: 'TENTATIVE',
+  cancelled: 'CANCELLED',
+};
+
+function icsText(value: string) {
+  return value.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+}
+
+eventsRouter.get('/', async (_req, res) => {
+  res.json(await listEvents());
+});
+
+// Descarga del calendario en formato iCalendar (RFC 5545), importable en Google Calendar, Outlook, etc.
+eventsRouter.get('/calendar.ics', async (_req, res) => {
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//FIA Connect//Calendario//ES', 'X-WR-CALNAME:Calendario FIA'];
+  for (const ev of await listEvents()) {
+    const date = ev.event_date.replace(/-/g, '');
+    lines.push(
+      'BEGIN:VEVENT',
+      `UID:event-${ev.id}@fia-connect`,
+      `DTSTAMP:${stamp}`,
+      ...(ev.event_time
+        ? [`DTSTART:${date}T${ev.event_time.replace(':', '')}00`, 'DURATION:PT2H']
+        : [`DTSTART;VALUE=DATE:${date}`]),
+      `SUMMARY:${icsText(`${ev.name} (${ev.category})`)}`,
+      `LOCATION:${icsText([ev.circuit, ev.location].filter(Boolean).join(', '))}`,
+      `DESCRIPTION:${icsText(ev.notes)}`,
+      `STATUS:${ICS_STATUS[ev.status] ?? 'CONFIRMED'}`,
+      'END:VEVENT',
+    );
+  }
+  lines.push('END:VCALENDAR');
+  res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="calendario-fia.ics"');
+  res.send(lines.join('\r\n') + '\r\n');
 });
 
 eventsRouter.get('/:id', async (req, res) => {

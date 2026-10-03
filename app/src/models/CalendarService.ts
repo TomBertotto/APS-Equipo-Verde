@@ -3,6 +3,13 @@ import { ApiClient } from './ApiClient';
 export const EVENT_CATEGORIES = ['F1', 'F2', 'F3', 'F1 Academy'];
 export const EVENT_STATUSES = ['scheduled', 'completed', 'cancelled', 'postponed'];
 
+export const EVENT_STATUS_LABELS: Record<string, string> = {
+  scheduled: 'Programado',
+  completed: 'Finalizado',
+  cancelled: 'Cancelado',
+  postponed: 'Postergado',
+};
+
 export type Event = {
   id: number;
   name: string;
@@ -10,7 +17,7 @@ export type Event = {
   location: string;
   category: string;
   event_date: string; // ISO date YYYY-MM-DD
-  event_time: string | null; // HH:MM:SS or HH:MM
+  event_time: string | null; // HH:MM
   status: string;
   notes: string;
 };
@@ -22,6 +29,10 @@ export class CalendarService {
 
   getEvents() {
     return this.api.request<Event[]>('/events');
+  }
+
+  icsUrl() {
+    return this.api.url('/events/calendar.ics');
   }
 
   createEvent(event: EventInput) {
