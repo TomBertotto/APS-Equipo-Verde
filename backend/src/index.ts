@@ -1,8 +1,7 @@
 import express from 'express';
 import cors from 'cors';
-import pg from 'pg';
-
-const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+import { pool, initDb } from './db.js';
+import { authRouter } from './auth.js';
 
 const app = express();
 app.use(cors());
@@ -17,5 +16,8 @@ app.get('/health', async (_req, res) => {
   }
 });
 
+app.use('/auth', authRouter);
+
 const port = Number(process.env.PORT ?? 3000);
+await initDb();
 app.listen(port, () => console.log(`API listening on :${port}`));

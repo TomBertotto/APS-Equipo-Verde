@@ -1,28 +1,9 @@
 import { Button, Text, TextInput, View } from 'react-native';
-import { useAuthViewModel } from '../src/viewmodels/useAuthViewModel';
+import { useRegisterViewModel } from '../src/viewmodels/useRegisterViewModel';
 import { formStyles as styles } from '../src/views/styles';
 
-export default function Home() {
-  const vm = useAuthViewModel();
-
-  if (vm.loading) {
-    return (
-      <View style={styles.container}>
-        <Text>Cargando...</Text>
-      </View>
-    );
-  }
-
-  if (vm.currentUser) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.form}>
-          <Text>Sesión iniciada como {vm.currentUser}</Text>
-          <Button title="Cerrar sesión" onPress={vm.logout} />
-        </View>
-      </View>
-    );
-  }
+export default function Register() {
+  const vm = useRegisterViewModel();
 
   return (
     <View style={styles.container}>
@@ -42,8 +23,8 @@ export default function Home() {
           onChangeText={vm.setPassword}
         />
         {vm.error ? <Text style={styles.error}>{vm.error}</Text> : null}
-        <Button title="Iniciar sesión" onPress={vm.login} />
-        <Button title="Registrarse" onPress={vm.goToRegister} />
+        <Button title="Crear cuenta" onPress={vm.register} />
+        <Button title="Volver" onPress={vm.goBack} />
       </View>
     </View>
   );
