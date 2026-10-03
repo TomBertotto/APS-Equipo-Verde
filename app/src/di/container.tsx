@@ -1,4 +1,5 @@
 import { createContext, ReactNode, useContext } from 'react';
+import { AccessService } from '../models/AccessService';
 import { ApiClient } from '../models/ApiClient';
 import { AuthService } from '../models/AuthService';
 import { ProfilesService } from '../models/ProfilesService';
@@ -9,6 +10,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
 export type Container = {
   authService: AuthService;
   profilesService: ProfilesService;
+  accessService: AccessService;
   tokenStorage: TokenStorage;
 };
 
@@ -18,6 +20,7 @@ const apiClient = new ApiClient(API_URL, tokenStorage);
 const defaultContainer: Container = {
   authService: new AuthService(apiClient),
   profilesService: new ProfilesService(apiClient),
+  accessService: new AccessService(apiClient),
   tokenStorage,
 };
 

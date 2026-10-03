@@ -29,6 +29,11 @@ export async function initDb() {
       team_id INTEGER REFERENCES teams(id),
       deleted_at TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS role_permissions (
+      role TEXT NOT NULL,
+      permission TEXT NOT NULL,
+      PRIMARY KEY (role, permission)
+    );
     INSERT INTO users (username, password, role) VALUES ('admin', 'admin', 'admin')
       ON CONFLICT (username) DO UPDATE SET role = 'admin';
   `);

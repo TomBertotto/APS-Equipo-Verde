@@ -37,7 +37,11 @@ export function useAuthViewModel() {
     try {
       const session = await authService.login(username, password);
       await tokenStorage.set(session.token);
-      setCurrentUser({ username: session.username, role: session.role });
+      setCurrentUser({
+        username: session.username,
+        role: session.role,
+        permissions: session.permissions,
+      });
       clearForm();
     } catch (err) {
       setError((err as Error).message);
@@ -55,8 +59,8 @@ export function useAuthViewModel() {
     router.push('/register');
   }
 
-  function goToAdmin() {
-    router.push('/admin');
+  function can(permission: string) {
+    return currentUser?.permissions.includes(permission) ?? false;
   }
 
   return {
@@ -65,12 +69,13 @@ export function useAuthViewModel() {
     password,
     setPassword,
     currentUser,
-    isAdmin: currentUser?.role === 'admin',
+    can,
     error,
     loading,
     login,
     logout,
     goToRegister,
-    goToAdmin,
+    goToAdmin: () => router.push('/admin'),
+    goToAccess: () => router.push('/access'),
   };
 }

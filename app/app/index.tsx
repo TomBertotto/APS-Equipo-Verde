@@ -18,7 +18,12 @@ export default function Home() {
       <View style={styles.container}>
         <View style={styles.form}>
           <Text>Sesión iniciada como {vm.currentUser.username}</Text>
-          {vm.isAdmin ? <Button title="Administrar perfiles" onPress={vm.goToAdmin} /> : null}
+          {vm.can('profiles.manage') ? (
+            <Button title="Administrar perfiles" onPress={vm.goToAdmin} />
+          ) : null}
+          {vm.can('users.manage') ? (
+            <Button title="Usuarios y permisos" onPress={vm.goToAccess} />
+          ) : null}
           <Button title="Cerrar sesión" onPress={vm.logout} />
         </View>
       </View>

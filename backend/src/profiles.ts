@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { pool } from './db.js';
-import { requireAdmin } from './auth.js';
+import { requirePermission } from './permissions.js';
 
 export const teamsRouter = Router();
 export const driversRouter = Router();
@@ -12,7 +12,7 @@ teamsRouter.get('/', async (_req, res) => {
   res.json(result.rows);
 });
 
-teamsRouter.post('/', requireAdmin, async (req, res) => {
+teamsRouter.post('/', requirePermission('profiles.manage'), async (req, res) => {
   const { name, country, category } = req.body;
   if (!name) {
     res.status(400).json({ error: 'El nombre es obligatorio' });
@@ -25,7 +25,7 @@ teamsRouter.post('/', requireAdmin, async (req, res) => {
   res.json(result.rows[0]);
 });
 
-teamsRouter.put('/:id', requireAdmin, async (req, res) => {
+teamsRouter.put('/:id', requirePermission('profiles.manage'), async (req, res) => {
   const { name, country, category } = req.body;
   if (!name) {
     res.status(400).json({ error: 'El nombre es obligatorio' });
@@ -42,7 +42,7 @@ teamsRouter.put('/:id', requireAdmin, async (req, res) => {
   res.json(result.rows[0]);
 });
 
-teamsRouter.delete('/:id', requireAdmin, async (req, res) => {
+teamsRouter.delete('/:id', requirePermission('profiles.manage'), async (req, res) => {
   await pool.query('UPDATE teams SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL', [
     req.params.id,
   ]);
@@ -60,7 +60,7 @@ driversRouter.get('/', async (_req, res) => {
   res.json(result.rows);
 });
 
-driversRouter.post('/', requireAdmin, async (req, res) => {
+driversRouter.post('/', requirePermission('profiles.manage'), async (req, res) => {
   const { name, nationality, number, teamId } = req.body;
   if (!name) {
     res.status(400).json({ error: 'El nombre es obligatorio' });
@@ -73,7 +73,7 @@ driversRouter.post('/', requireAdmin, async (req, res) => {
   res.json(result.rows[0]);
 });
 
-driversRouter.put('/:id', requireAdmin, async (req, res) => {
+driversRouter.put('/:id', requirePermission('profiles.manage'), async (req, res) => {
   const { name, nationality, number, teamId } = req.body;
   if (!name) {
     res.status(400).json({ error: 'El nombre es obligatorio' });
@@ -90,7 +90,7 @@ driversRouter.put('/:id', requireAdmin, async (req, res) => {
   res.json(result.rows[0]);
 });
 
-driversRouter.delete('/:id', requireAdmin, async (req, res) => {
+driversRouter.delete('/:id', requirePermission('profiles.manage'), async (req, res) => {
   await pool.query('UPDATE drivers SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL', [
     req.params.id,
   ]);

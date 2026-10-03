@@ -1,38 +1,14 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
 import { randomUUID } from 'crypto';
 import { pool } from './db.js';
+import { getPermissions, getToken, getUserByToken } from './permissions.js';
 
 export const authRouter = Router();
 
-function getToken(req: Request) {
-  return req.headers.authorization?.replace('Bearer ', '') ?? '';
-}
-
-async function getUserByToken(token: string) {
-  const result = await pool.query(
-    'SELECT u.id, u.username, u.role FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = $1',
-    [token],
-  );
-  return result.rows[0] as { id: number; username: string; role: string } | undefined;
-}
-
-export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  const user = await getUserByToken(getToken(req));
-  if (!user) {
-    res.status(401).json({ error: 'No autenticado' });
-    return;
-  }
-  if (user.role !== 'admin') {
-    res.status(403).json({ error: 'Acceso denegado' });
-    return;
-  }
-  next();
-}
-
-async function createSession(userId: number) {
+async function createSession(user: { id: number; role: string }, username: string) {
   const token = randomUUID();
-  await pool.query('INSERT INTO sessions (token, user_id) VALUES ($1, $2)', [token, userId]);
-  return token;
+  await pool.query('INSERT INTO sessions (token, user_id) VALUES ($1, $2)', [token, user.id]);
+  return { token, username, role: user.role, permissions: await getPermissions(user.role) };
 }
 
 authRouter.post('/register', async (req, res) => {
@@ -50,8 +26,7 @@ authRouter.post('/register', async (req, res) => {
     'INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id, role',
     [username, password],
   );
-  const token = await createSession(result.rows[0].id);
-  res.json({ token, username, role: result.rows[0].role });
+  res.json(await createSession(result.rows[0], username));
 });
 
 authRouter.post('/login', async (req, res) => {
@@ -64,8 +39,7 @@ authRouter.post('/login', async (req, res) => {
     res.status(401).json({ error: 'Credenciales inválidas' });
     return;
   }
-  const token = await createSession(result.rows[0].id);
-  res.json({ token, username, role: result.rows[0].role });
+  res.json(await createSession(result.rows[0], username));
 });
 
 authRouter.post('/logout', async (req, res) => {
@@ -79,5 +53,5 @@ authRouter.get('/me', async (req, res) => {
     res.status(401).json({ error: 'No autenticado' });
     return;
   }
-  res.json({ username: user.username, role: user.role });
+  res.json({ username: user.username, role: user.role, permissions: user.permissions });
 });

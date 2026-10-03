@@ -19,7 +19,7 @@ export default function Admin() {
     );
   }
 
-  if (!auth.isAdmin) {
+  if (!auth.can('profiles.manage')) {
     return (
       <View style={formStyles.container}>
         <Text>Acceso denegado</Text>
