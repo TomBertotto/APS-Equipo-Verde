@@ -4,6 +4,7 @@ import { pool, initDb } from './db.js';
 import { authRouter } from './auth.js';
 import { teamsRouter, driversRouter } from './profiles.js';
 import { accessRouter } from './access.js';
+import { eventsRouter } from './calendar.js';
 
 const app = express();
 app.use(cors());
@@ -22,6 +23,7 @@ app.use('/auth', authRouter);
 app.use('/teams', teamsRouter);
 app.use('/drivers', driversRouter);
 app.use('/access', accessRouter);
+app.use('/events', eventsRouter);
 
 const port = Number(process.env.PORT ?? 3000);
 await initDb();

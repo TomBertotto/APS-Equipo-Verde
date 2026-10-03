@@ -9,6 +9,7 @@ export const ROLE_LABELS: Record<string, string> = {
 export const PERMISSION_LABELS: Record<string, string> = {
   'profiles.manage': 'Administrar escuderías y pilotos',
   'users.manage': 'Administrar usuarios y permisos',
+  'calendar.manage': 'Gestionar calendario de carreras',
 };
 
 export type UserRow = { id: number; username: string; role: string };

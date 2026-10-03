@@ -77,5 +77,6 @@ export function useAuthViewModel() {
     goToRegister,
     goToAdmin: () => router.push('/admin'),
     goToAccess: () => router.push('/access'),
+    goToCalendarAdmin: () => router.push('/calendar-admin'),
   };
 }

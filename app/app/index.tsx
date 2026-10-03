@@ -24,6 +24,9 @@ export default function Home() {
           {vm.can('users.manage') ? (
             <Button title="Usuarios y permisos" onPress={vm.goToAccess} />
           ) : null}
+          {vm.can('calendar.manage') ? (
+            <Button title="Gestionar calendario" onPress={vm.goToCalendarAdmin} />
+          ) : null}
           <Button title="Cerrar sesión" onPress={vm.logout} />
         </View>
       </View>
