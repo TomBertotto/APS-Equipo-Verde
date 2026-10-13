@@ -26,6 +26,10 @@ export default function Access() {
   }
 
   const roleOptions = vm.info.roles.map((r) => ({ label: ROLE_LABELS[r] ?? r, value: r }));
+  const teamOptions = [
+    { label: 'Sin escudería', value: null as number | null },
+    ...vm.teams.map((t) => ({ label: t.name, value: t.id as number | null })),
+  ];
 
   return (
     <ScrollView contentContainerStyle={styles.page}>
@@ -45,6 +49,16 @@ export default function Access() {
                 onSelect={(role) => vm.setUserRole(user.id, role)}
               />
             )}
+            {user.role === 'team_manager' ? (
+              <>
+                <Text>Escudería:</Text>
+                <OptionPicker
+                  options={teamOptions}
+                  selected={user.team_id}
+                  onSelect={(teamId) => vm.setUserTeam(user.id, teamId)}
+                />
+              </>
+            ) : null}
           </View>
         ))}
 

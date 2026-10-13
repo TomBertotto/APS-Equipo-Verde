@@ -2,9 +2,16 @@ import { Request, Response, NextFunction } from 'express';
 import { pool } from './db.js';
 
 export const ROLES = ['admin', 'team_manager', 'user'];
-export const PERMISSIONS = ['profiles.manage', 'users.manage', 'calendar.manage'];
+export const PERMISSIONS = ['profiles.manage', 'users.manage', 'calendar.manage', 'drivers.manage_own'];
 
-export type AuthUser = { id: number; username: string; role: string; permissions: string[] };
+export type AuthUser = {
+  id: number;
+  username: string;
+  role: string;
+  teamId: number | null;
+  teamName: string | null;
+  permissions: string[];
+};
 
 export function getToken(req: Request) {
   return req.headers.authorization?.replace('Bearer ', '') ?? '';
@@ -18,7 +25,11 @@ export async function getPermissions(role: string) {
 
 export async function getUserByToken(token: string): Promise<AuthUser | undefined> {
   const result = await pool.query(
-    'SELECT u.id, u.username, u.role FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = $1',
+    `SELECT u.id, u.username, u.role, t.id AS "teamId", t.name AS "teamName"
+     FROM sessions s
+     JOIN users u ON u.id = s.user_id
+     LEFT JOIN teams t ON t.id = u.team_id AND t.deleted_at IS NULL
+     WHERE s.token = $1`,
     [token],
   );
   const user = result.rows[0];
@@ -27,13 +38,17 @@ export async function getUserByToken(token: string): Promise<AuthUser | undefine
 }
 
 export function requirePermission(permission: string) {
+  return requireAnyPermission(permission);
+}
+
+export function requireAnyPermission(...permissions: string[]) {
   return async (req: Request, res: Response, next: NextFunction) => {
     const user = await getUserByToken(getToken(req));
     if (!user) {
       res.status(401).json({ error: 'No autenticado' });
       return;
     }
-    if (!user.permissions.includes(permission)) {
+    if (!permissions.some((p) => user.permissions.includes(p))) {
       res.status(403).json({ error: 'Acceso denegado' });
       return;
     }

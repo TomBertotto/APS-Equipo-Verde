@@ -33,6 +33,8 @@ export async function initDb() {
       team_id INTEGER REFERENCES teams(id),
       deleted_at TIMESTAMP
     );
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS team_id INTEGER REFERENCES teams(id);
+    ALTER TABLE drivers ADD COLUMN IF NOT EXISTS lineup TEXT NOT NULL DEFAULT 'titular';
     CREATE TABLE IF NOT EXISTS role_permissions (
       role TEXT NOT NULL,
       permission TEXT NOT NULL,
@@ -50,6 +52,9 @@ export async function initDb() {
       notes TEXT NOT NULL DEFAULT '',
       deleted_at TIMESTAMP
     );
+    INSERT INTO role_permissions (role, permission)
+      SELECT 'team_manager', 'drivers.manage_own'
+      WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role = 'team_manager');
     INSERT INTO users (username, password, role) VALUES ('admin', 'admin', 'admin')
       ON CONFLICT (username) DO UPDATE SET role = 'admin';
   `);

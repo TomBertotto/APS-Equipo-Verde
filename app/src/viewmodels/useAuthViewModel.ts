@@ -37,11 +37,8 @@ export function useAuthViewModel() {
     try {
       const session = await authService.login(username, password);
       await tokenStorage.set(session.token);
-      setCurrentUser({
-        username: session.username,
-        role: session.role,
-        permissions: session.permissions,
-      });
+      const { token, ...user } = session;
+      setCurrentUser(user);
       clearForm();
     } catch (err) {
       setError((err as Error).message);
@@ -79,5 +76,7 @@ export function useAuthViewModel() {
     goToAccess: () => router.push('/access'),
     goToCalendarAdmin: () => router.push('/calendar-admin'),
     goToCalendar: () => router.push('/calendar'),
+    goToMyTeam: () => router.push('/my-team'),
+    goToDrivers: () => router.push('/drivers'),
   };
 }

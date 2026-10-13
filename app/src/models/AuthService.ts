@@ -1,6 +1,12 @@
 import { ApiClient } from './ApiClient';
 
-export type User = { username: string; role: string; permissions: string[] };
+export type User = {
+  username: string;
+  role: string;
+  teamId: number | null;
+  teamName: string | null;
+  permissions: string[];
+};
 export type Session = User & { token: string };
 
 export class AuthService {

@@ -7,7 +7,12 @@ export const accessRouter = Router();
 accessRouter.use(requirePermission('users.manage'));
 
 accessRouter.get('/users', async (_req, res) => {
-  const result = await pool.query('SELECT id, username, role FROM users ORDER BY username');
+  const result = await pool.query(`
+    SELECT u.id, u.username, u.role, t.id AS team_id, t.name AS team_name
+    FROM users u
+    LEFT JOIN teams t ON t.id = u.team_id AND t.deleted_at IS NULL
+    ORDER BY u.username
+  `);
   res.json(result.rows);
 });
 
@@ -22,6 +27,19 @@ accessRouter.put('/users/:id/role', async (req, res) => {
     return;
   }
   await pool.query('UPDATE users SET role = $1 WHERE id = $2', [role, req.params.id]);
+  res.json({ ok: true });
+});
+
+accessRouter.put('/users/:id/team', async (req, res) => {
+  const teamId = req.body.teamId ?? null;
+  if (teamId !== null) {
+    const team = await pool.query('SELECT id FROM teams WHERE id = $1 AND deleted_at IS NULL', [teamId]);
+    if (!team.rowCount) {
+      res.status(400).json({ error: 'Escudería inválida' });
+      return;
+    }
+  }
+  await pool.query('UPDATE users SET team_id = $1 WHERE id = $2', [teamId, req.params.id]);
   res.json({ ok: true });
 });
 

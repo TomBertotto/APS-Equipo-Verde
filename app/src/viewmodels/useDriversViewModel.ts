@@ -1,20 +1,22 @@
 import { useEffect, useState } from 'react';
 import { useContainer } from '../di/container';
-import { Driver } from '../models/ProfilesService';
+import { Driver, LINEUPS } from '../models/ProfilesService';
 
-export function useDriversViewModel() {
+// Con fixedTeamId (responsable de escudería) solo se ven y se cargan pilotos de esa escudería
+export function useDriversViewModel(fixedTeamId?: number) {
   const { profilesService } = useContainer();
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [name, setName] = useState('');
   const [nationality, setNationality] = useState('');
   const [number, setNumber] = useState('');
-  const [teamId, setTeamId] = useState<number | null>(null);
+  const [teamId, setTeamId] = useState<number | null>(fixedTeamId ?? null);
+  const [lineup, setLineup] = useState<string>(LINEUPS[0]);
   const [error, setError] = useState('');
 
   async function load() {
     try {
-      setDrivers(await profilesService.getDrivers());
+      setDrivers(await profilesService.getDrivers(fixedTeamId));
     } catch (err) {
       setError((err as Error).message);
     }
@@ -22,14 +24,15 @@ export function useDriversViewModel() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [fixedTeamId]);
 
   function resetForm() {
     setEditingId(null);
     setName('');
     setNationality('');
     setNumber('');
-    setTeamId(null);
+    setLineup(LINEUPS[0]);
+    setTeamId(fixedTeamId ?? null);
     setError('');
   }
 
@@ -38,13 +41,20 @@ export function useDriversViewModel() {
     setName(driver.name);
     setNationality(driver.nationality);
     setNumber(driver.number === null ? '' : String(driver.number));
+    setLineup(driver.lineup);
     setTeamId(driver.team_id);
     setError('');
   }
 
   async function save() {
     try {
-      const input = { name, nationality, number: number ? Number(number) : null, teamId };
+      const input = {
+        name,
+        nationality,
+        number: number ? Number(number) : null,
+        lineup,
+        teamId: fixedTeamId ?? teamId,
+      };
       if (editingId) await profilesService.updateDriver(editingId, input);
       else await profilesService.createDriver(input);
       resetForm();
@@ -75,6 +85,8 @@ export function useDriversViewModel() {
     setNumber,
     teamId,
     setTeamId,
+    lineup,
+    setLineup,
     error,
     edit,
     save,

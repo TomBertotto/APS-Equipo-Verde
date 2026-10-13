@@ -10,9 +10,16 @@ export const PERMISSION_LABELS: Record<string, string> = {
   'profiles.manage': 'Administrar escuderías y pilotos',
   'users.manage': 'Administrar usuarios y permisos',
   'calendar.manage': 'Gestionar calendario de carreras',
+  'drivers.manage_own': 'Gestionar pilotos de su escudería',
 };
 
-export type UserRow = { id: number; username: string; role: string };
+export type UserRow = {
+  id: number;
+  username: string;
+  role: string;
+  team_id: number | null;
+  team_name: string | null;
+};
 export type PermissionsInfo = {
   roles: string[];
   permissions: string[];
@@ -28,6 +35,10 @@ export class AccessService {
 
   setUserRole(id: number, role: string) {
     return this.api.request(`/access/users/${id}/role`, 'PUT', { role });
+  }
+
+  setUserTeam(id: number, teamId: number | null) {
+    return this.api.request(`/access/users/${id}/team`, 'PUT', { teamId });
   }
 
   getPermissions() {

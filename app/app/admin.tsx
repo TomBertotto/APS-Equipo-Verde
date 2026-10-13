@@ -2,7 +2,7 @@ import { Button, ScrollView, StyleSheet, Text, TextInput, View } from 'react-nat
 import { useAuthViewModel } from '../src/viewmodels/useAuthViewModel';
 import { useTeamsViewModel } from '../src/viewmodels/useTeamsViewModel';
 import { useDriversViewModel } from '../src/viewmodels/useDriversViewModel';
-import { CATEGORIES } from '../src/models/ProfilesService';
+import { CATEGORIES, LINEUPS, LINEUP_LABELS } from '../src/models/ProfilesService';
 import { OptionPicker } from '../src/views/OptionPicker';
 import { formStyles } from '../src/views/styles';
 
@@ -91,6 +91,11 @@ export default function Admin() {
           value={drivers.number}
           onChangeText={drivers.setNumber}
         />
+        <OptionPicker
+          options={LINEUPS.map((l) => ({ label: LINEUP_LABELS[l], value: l }))}
+          selected={drivers.lineup}
+          onSelect={drivers.setLineup}
+        />
         <Text>Escudería:</Text>
         <OptionPicker
           options={[
@@ -106,7 +111,8 @@ export default function Admin() {
         {drivers.drivers.map((driver) => (
           <View key={driver.id} style={styles.row}>
             <Text style={styles.rowText}>
-              {driver.number ?? '-'} · {driver.name} · {driver.nationality} · {driver.team_name ?? 'Sin escudería'}
+              {driver.number ?? '-'} · {driver.name} · {driver.nationality} · {driver.team_name ?? 'Sin escudería'} ·{' '}
+              {LINEUP_LABELS[driver.lineup] ?? driver.lineup}
             </Text>
             <Button title="Editar" onPress={() => drivers.edit(driver)} />
             <Button title="Eliminar" onPress={() => drivers.remove(driver.id)} />

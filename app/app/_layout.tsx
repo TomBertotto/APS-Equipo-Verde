@@ -11,6 +11,8 @@ export default function RootLayout() {
         <Stack.Screen name="access" options={{ title: 'Usuarios y permisos' }} />
         <Stack.Screen name="calendar" options={{ title: 'Calendario' }} />
         <Stack.Screen name="calendar-admin" options={{ title: 'Gestionar calendario' }} />
+        <Stack.Screen name="my-team" options={{ title: 'Mi escudería' }} />
+        <Stack.Screen name="drivers" options={{ title: 'Pilotos por escudería' }} />
       </Stack>
     </ContainerProvider>
   );

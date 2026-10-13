@@ -1,18 +1,25 @@
 import { useEffect, useState } from 'react';
 import { useContainer } from '../di/container';
 import { PermissionsInfo, UserRow } from '../models/AccessService';
+import { Team } from '../models/ProfilesService';
 
 export function useAccessViewModel() {
-  const { accessService } = useContainer();
+  const { accessService, profilesService } = useContainer();
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [info, setInfo] = useState<PermissionsInfo>({ roles: [], permissions: [], grants: {} });
   const [error, setError] = useState('');
 
   async function load() {
     try {
-      const [u, p] = await Promise.all([accessService.getUsers(), accessService.getPermissions()]);
+      const [u, p, t] = await Promise.all([
+        accessService.getUsers(),
+        accessService.getPermissions(),
+        profilesService.getTeams(),
+      ]);
       setUsers(u);
       setInfo(p);
+      setTeams(t);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -36,6 +43,10 @@ export function useAccessViewModel() {
     return run(() => accessService.setUserRole(id, role));
   }
 
+  function setUserTeam(id: number, teamId: number | null) {
+    return run(() => accessService.setUserTeam(id, teamId));
+  }
+
   function togglePermission(role: string, permission: string) {
     const current = info.grants[role] ?? [];
     const next = current.includes(permission)
@@ -44,5 +55,5 @@ export function useAccessViewModel() {
     return run(() => accessService.setRolePermissions(role, next));
   }
 
-  return { users, info, error, setUserRole, togglePermission };
+  return { users, teams, info, error, setUserRole, setUserTeam, togglePermission };
 }

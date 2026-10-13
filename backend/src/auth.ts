@@ -1,14 +1,19 @@
 import { Router } from 'express';
 import { randomUUID } from 'crypto';
 import { pool } from './db.js';
-import { getPermissions, getToken, getUserByToken } from './permissions.js';
+import { AuthUser, getToken, getUserByToken } from './permissions.js';
 
 export const authRouter = Router();
 
-async function createSession(user: { id: number; role: string }, username: string) {
+function publicUser(user: AuthUser) {
+  const { username, role, teamId, teamName, permissions } = user;
+  return { username, role, teamId, teamName, permissions };
+}
+
+async function createSession(userId: number) {
   const token = randomUUID();
-  await pool.query('INSERT INTO sessions (token, user_id) VALUES ($1, $2)', [token, user.id]);
-  return { token, username, role: user.role, permissions: await getPermissions(user.role) };
+  await pool.query('INSERT INTO sessions (token, user_id) VALUES ($1, $2)', [token, userId]);
+  return { token, ...publicUser((await getUserByToken(token))!) };
 }
 
 authRouter.post('/register', async (req, res) => {
@@ -23,23 +28,23 @@ authRouter.post('/register', async (req, res) => {
     return;
   }
   const result = await pool.query(
-    'INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id, role',
+    'INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id',
     [username, password],
   );
-  res.json(await createSession(result.rows[0], username));
+  res.json(await createSession(result.rows[0].id));
 });
 
 authRouter.post('/login', async (req, res) => {
   const { username, password } = req.body;
   const result = await pool.query(
-    'SELECT id, role FROM users WHERE username = $1 AND password = $2',
+    'SELECT id FROM users WHERE username = $1 AND password = $2',
     [username, password],
   );
   if (!result.rowCount) {
     res.status(401).json({ error: 'Credenciales inválidas' });
     return;
   }
-  res.json(await createSession(result.rows[0], username));
+  res.json(await createSession(result.rows[0].id));
 });
 
 authRouter.post('/logout', async (req, res) => {
@@ -53,5 +58,5 @@ authRouter.get('/me', async (req, res) => {
     res.status(401).json({ error: 'No autenticado' });
     return;
   }
-  res.json({ username: user.username, role: user.role, permissions: user.permissions });
+  res.json(publicUser(user));
 });

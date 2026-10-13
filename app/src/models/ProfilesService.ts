@@ -2,6 +2,9 @@ import { ApiClient } from './ApiClient';
 
 export const CATEGORIES = ['F1', 'F2', 'F3', 'F1 Academy'];
 
+export const LINEUPS = ['titular', 'suplente'];
+export const LINEUP_LABELS: Record<string, string> = { titular: 'Titular', suplente: 'Suplente' };
+
 export type Team = { id: number; name: string; country: string; category: string };
 export type TeamInput = Omit<Team, 'id'>;
 
@@ -10,6 +13,7 @@ export type Driver = {
   name: string;
   nationality: string;
   number: number | null;
+  lineup: string;
   team_id: number | null;
   team_name: string | null;
 };
@@ -17,6 +21,7 @@ export type DriverInput = {
   name: string;
   nationality: string;
   number: number | null;
+  lineup: string;
   teamId: number | null;
 };
 
@@ -39,8 +44,8 @@ export class ProfilesService {
     return this.api.request(`/teams/${id}`, 'DELETE');
   }
 
-  getDrivers() {
-    return this.api.request<Driver[]>('/drivers');
+  getDrivers(teamId?: number) {
+    return this.api.request<Driver[]>(teamId ? `/drivers?teamId=${teamId}` : '/drivers');
   }
 
   createDriver(driver: DriverInput) {

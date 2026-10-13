@@ -27,7 +27,11 @@ export default function Home() {
           {vm.can('calendar.manage') ? (
             <Button title="Gestionar calendario" onPress={vm.goToCalendarAdmin} />
           ) : null}
+          {vm.can('drivers.manage_own') ? (
+            <Button title="Mi escudería" onPress={vm.goToMyTeam} />
+          ) : null}
           <Button title="Ver calendario" onPress={vm.goToCalendar} />
+          <Button title="Ver pilotos" onPress={vm.goToDrivers} />
           <Button title="Cerrar sesión" onPress={vm.logout} />
         </View>
       </View>
@@ -55,6 +59,7 @@ export default function Home() {
         <Button title="Iniciar sesión" onPress={vm.login} />
         <Button title="Registrarse" onPress={vm.goToRegister} />
         <Button title="Ver calendario" onPress={vm.goToCalendar} />
+        <Button title="Ver pilotos" onPress={vm.goToDrivers} />
       </View>
     </View>
   );
