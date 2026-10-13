@@ -14,7 +14,9 @@ export function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const wide = width >= WIDE_BREAKPOINT;
 
-  const links = NAV_LINKS.filter((l) => !l.permission || auth.can(l.permission));
+  const links = NAV_LINKS.filter(
+    (l) => (!l.permission || auth.can(l.permission)) && (!l.requiresTeam || !!auth.currentUser?.teamId),
+  );
 
   function go(href: string) {
     setMenuOpen(false);

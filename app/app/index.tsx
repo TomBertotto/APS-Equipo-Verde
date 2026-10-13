@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../src/viewmodels/AuthProvider';
 import { useHomeViewModel } from '../src/viewmodels/useHomeViewModel';
+import { useMyResultsViewModel } from '../src/viewmodels/useMyResultsViewModel';
 import { AppButton } from '../src/views/AppButton';
 import { Card } from '../src/views/Card';
 import { Screen } from '../src/views/Screen';
@@ -11,6 +12,7 @@ import { colors, fonts, radius, spacing } from '../src/views/theme';
 export default function Home() {
   const auth = useAuth();
   const vm = useHomeViewModel();
+  const myResults = useMyResultsViewModel(auth.can('results.confirm_own') && !!auth.currentUser?.teamId);
 
   return (
     <Screen maxWidth={900}>
@@ -30,6 +32,18 @@ export default function Home() {
           </View>
         )}
       </View>
+
+      {myResults.pending > 0 ? (
+        <View style={styles.notice}>
+          <View style={styles.noticeMain}>
+            <Text style={styles.noticeTitle}>
+              Tenés {myResults.pending} {myResults.pending === 1 ? 'resultado' : 'resultados'} sin confirmar
+            </Text>
+            <BodyText muted>La FIA publicó puntajes de tu escudería que todavía no confirmaste.</BodyText>
+          </View>
+          <AppButton title="Ver mis puntajes" small onPress={() => router.navigate('/my-results')} />
+        </View>
+      ) : null}
 
       <SectionTitle>Próxima carrera</SectionTitle>
       <Card>
@@ -71,6 +85,20 @@ const styles = StyleSheet.create({
   heroTitle: { fontFamily: fonts.black, fontSize: 40, color: colors.onDark, letterSpacing: 1 },
   heroText: { fontFamily: fonts.regular, fontSize: 16, color: '#C9C9CF' },
   heroActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  notice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
+    borderRadius: radius.sm,
+  },
+  noticeMain: { flex: 1, minWidth: 200 },
+  noticeTitle: { fontFamily: fonts.bold, fontSize: 16, color: colors.text },
   eventName: { fontFamily: fonts.black, fontSize: 24, color: colors.text, textTransform: 'uppercase' },
   cardAction: { alignItems: 'flex-start', marginTop: spacing.xs },
 });

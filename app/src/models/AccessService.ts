@@ -11,6 +11,8 @@ export const PERMISSION_LABELS: Record<string, string> = {
   'users.manage': 'Administrar usuarios y permisos',
   'calendar.manage': 'Gestionar calendario de carreras',
   'drivers.manage_own': 'Gestionar pilotos de su escudería',
+  'results.manage': 'Cargar resultados de carreras',
+  'results.confirm_own': 'Ver y confirmar puntajes de su escudería',
 };
 
 export type UserRow = {

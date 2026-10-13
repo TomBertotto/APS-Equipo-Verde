@@ -1,4 +1,6 @@
+import { PoolClient } from 'pg';
 import { pool } from './db.js';
+import { pointsFor } from './results.js';
 
 // Datos de prueba: se cargan solo en una base vacía (sin escuderías)
 
@@ -80,48 +82,114 @@ const EVENTS: { name: string; circuit: string; location: string; date: string; t
   { name: 'Gran Premio de Abu Dabi', circuit: 'Yas Marina', location: 'Abu Dabi, Emiratos Árabes Unidos', date: '2026-12-06', time: '13:00' },
 ];
 
-export async function seedDb() {
-  const existing = await pool.query('SELECT COUNT(*)::int AS count FROM teams');
-  if (existing.rows[0].count > 0) return;
-
+async function inTransaction(work: (client: PoolClient) => Promise<void>) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const teamIds: Record<string, number> = {};
-    for (const team of TEAMS) {
-      const result = await client.query(
-        "INSERT INTO teams (name, country, category) VALUES ($1, $2, 'F1') RETURNING id",
-        [team.name, team.country],
-      );
-      teamIds[team.name] = result.rows[0].id;
-    }
-    for (const d of DRIVERS) {
-      await client.query(
-        'INSERT INTO drivers (name, nationality, number, team_id, lineup) VALUES ($1, $2, $3, $4, $5)',
-        [d.name, d.nationality, d.number, teamIds[d.team], d.lineup],
-      );
-    }
-    for (const u of SEED_USERS) {
-      await client.query(
-        `INSERT INTO users (username, password, role, team_id) VALUES ($1, $1, $2, $3)
-         ON CONFLICT (username) DO NOTHING`,
-        [u.username, u.role, u.team ? teamIds[u.team] : null],
-      );
-    }
-    const today = new Date().toISOString().slice(0, 10);
-    for (const e of EVENTS) {
-      await client.query(
-        `INSERT INTO events (name, circuit, location, category, event_date, event_time, status, notes)
-         VALUES ($1, $2, $3, 'F1', $4, $5, $6, $7)`,
-        [e.name, e.circuit, e.location, e.date, e.time, e.status ?? (e.date < today ? 'completed' : 'scheduled'), e.notes ?? ''],
-      );
-    }
+    await work(client);
     await client.query('COMMIT');
-    console.log('Datos de prueba cargados');
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
   } finally {
     client.release();
+  }
+}
+
+async function seedBase(client: PoolClient) {
+  const teamIds: Record<string, number> = {};
+  for (const team of TEAMS) {
+    const result = await client.query(
+      "INSERT INTO teams (name, country, category) VALUES ($1, $2, 'F1') RETURNING id",
+      [team.name, team.country],
+    );
+    teamIds[team.name] = result.rows[0].id;
+  }
+  for (const d of DRIVERS) {
+    await client.query(
+      'INSERT INTO drivers (name, nationality, number, team_id, lineup) VALUES ($1, $2, $3, $4, $5)',
+      [d.name, d.nationality, d.number, teamIds[d.team], d.lineup],
+    );
+  }
+  for (const u of SEED_USERS) {
+    await client.query(
+      `INSERT INTO users (username, password, role, team_id) VALUES ($1, $1, $2, $3)
+       ON CONFLICT (username) DO NOTHING`,
+      [u.username, u.role, u.team ? teamIds[u.team] : null],
+    );
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  for (const e of EVENTS) {
+    await client.query(
+      `INSERT INTO events (name, circuit, location, category, event_date, event_time, status, notes)
+       VALUES ($1, $2, $3, 'F1', $4, $5, $6, $7)`,
+      [e.name, e.circuit, e.location, e.date, e.time, e.status ?? (e.date < today ? 'completed' : 'scheduled'), e.notes ?? ''],
+    );
+  }
+}
+
+// PRNG determinístico (mulberry32), para que los resultados de ejemplo sean siempre los mismos
+function random(seed: number) {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Resultados de las carreras ya corridas, con los pilotos titulares actuales de la base
+async function seedResults(client: PoolClient) {
+  const events = await client.query(
+    "SELECT id FROM events WHERE status = 'completed' AND deleted_at IS NULL ORDER BY event_date",
+  );
+  const drivers = await client.query(
+    "SELECT id, team_id FROM drivers WHERE lineup = 'titular' AND team_id IS NOT NULL AND deleted_at IS NULL ORDER BY id",
+  );
+  if (!events.rowCount || !drivers.rowCount) return false;
+
+  const ferrari = await client.query("SELECT id, team_id FROM users WHERE username = 'ferrari@ferrari.com'");
+  const rand = random(2026);
+  for (const [index, event] of events.rows.entries()) {
+    const order = [...drivers.rows];
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    const retired = Math.floor(rand() * 3); // 0 a 2 abandonos por carrera
+    for (const [i, driver] of order.entries()) {
+      const position = i < order.length - retired ? i + 1 : null;
+      await client.query(
+        'INSERT INTO race_results (event_id, driver_id, team_id, position, points) VALUES ($1, $2, $3, $4, $5)',
+        [event.id, driver.id, driver.team_id, position, pointsFor(position)],
+      );
+    }
+    // Ferrari confirmó la recepción de una carrera sí y otra no; McLaren tiene todo pendiente
+    const manager = ferrari.rows[0];
+    if (manager?.team_id && index % 2 === 0) {
+      await client.query(
+        `INSERT INTO result_confirmations (event_id, team_id, user_id, confirmed_at)
+         SELECT $1, $2, $3, e.event_date + INTERVAL '2 days' FROM events e WHERE e.id = $1`,
+        [event.id, manager.team_id, manager.id],
+      );
+    }
+  }
+  return true;
+}
+
+// Cada sección se carga solo si su tabla está vacía, así nunca pisa datos existentes
+export async function seedDb() {
+  const teams = await pool.query('SELECT COUNT(*)::int AS count FROM teams');
+  if (teams.rows[0].count === 0) {
+    await inTransaction(seedBase);
+    console.log('Datos de prueba cargados');
+  }
+  const results = await pool.query('SELECT COUNT(*)::int AS count FROM race_results');
+  if (results.rows[0].count === 0) {
+    let loaded = false;
+    await inTransaction(async (client) => {
+      loaded = await seedResults(client);
+    });
+    if (loaded) console.log('Resultados de prueba cargados');
   }
 }

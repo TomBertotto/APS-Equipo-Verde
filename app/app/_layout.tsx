@@ -35,6 +35,9 @@ export default function RootLayout() {
           <Stack.Screen name="calendar-admin" options={{ title: 'Gestionar calendario' }} />
           <Stack.Screen name="my-team" options={{ title: 'Mi escudería' }} />
           <Stack.Screen name="drivers" options={{ title: 'Pilotos por escudería' }} />
+          <Stack.Screen name="results" options={{ title: 'Resultados' }} />
+          <Stack.Screen name="results-admin" options={{ title: 'Cargar resultados' }} />
+          <Stack.Screen name="my-results" options={{ title: 'Mis puntajes' }} />
         </Stack>
       </AuthProvider>
     </ContainerProvider>

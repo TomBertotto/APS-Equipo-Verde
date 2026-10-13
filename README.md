@@ -26,12 +26,12 @@ docker compose up
 
 # Usuarios de prueba
 
-Una base nueva arranca con datos de ejemplo (11 escuderías de F1 2026 con sus pilotos titulares y suplentes, y el calendario 2026). La contraseña de cada usuario es igual al usuario.
+Una base nueva arranca con datos de ejemplo (11 escuderías de F1 2026 con sus pilotos titulares y suplentes, el calendario 2026 y resultados de las carreras ya corridas). La contraseña de cada usuario es igual al usuario.
 
 | Usuario / contraseña | Perfil | Escudería |
 |---|---|---|
 | `admin@admin.com` | Administrador FIA | — |
-| `ferrari@ferrari.com` | Responsable de escudería | Ferrari |
-| `mclaren@mclaren.com` | Responsable de escudería | McLaren |
+| `ferrari@ferrari.com` | Responsable de escudería | Ferrari (con algunas carreras ya confirmadas y otras pendientes) |
+| `mclaren@mclaren.com` | Responsable de escudería | McLaren (todos los resultados pendientes de confirmar) |
 | `juancarlos@juancarlos.com` | Responsable de escudería | Sin asignar |
 | `publico@publico.com` | Sin perfil | — |

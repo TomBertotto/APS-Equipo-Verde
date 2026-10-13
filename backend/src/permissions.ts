@@ -2,7 +2,14 @@ import { Request, Response, NextFunction } from 'express';
 import { pool } from './db.js';
 
 export const ROLES = ['admin', 'team_manager', 'user'];
-export const PERMISSIONS = ['profiles.manage', 'users.manage', 'calendar.manage', 'drivers.manage_own'];
+export const PERMISSIONS = [
+  'profiles.manage',
+  'users.manage',
+  'calendar.manage',
+  'drivers.manage_own',
+  'results.manage',
+  'results.confirm_own',
+];
 
 export type AuthUser = {
   id: number;

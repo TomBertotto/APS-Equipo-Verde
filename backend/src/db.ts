@@ -6,6 +6,13 @@ pg.types.setTypeParser(1083, (v) => v.slice(0, 5));
 
 export const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 
+// Permisos que un rol recibe por defecto. Cada uno se otorga una sola vez (queda registrado en
+// default_grants_applied), así no reaparece si el admin lo quita desde "Usuarios y permisos".
+const DEFAULT_GRANTS: [string, string][] = [
+  ['team_manager', 'drivers.manage_own'],
+  ['team_manager', 'results.confirm_own'],
+];
+
 export async function initDb() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
@@ -52,10 +59,40 @@ export async function initDb() {
       notes TEXT NOT NULL DEFAULT '',
       deleted_at TIMESTAMP
     );
-    INSERT INTO role_permissions (role, permission)
-      SELECT 'team_manager', 'drivers.manage_own'
-      WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role = 'team_manager');
+    CREATE TABLE IF NOT EXISTS race_results (
+      id SERIAL PRIMARY KEY,
+      event_id INTEGER NOT NULL REFERENCES events(id),
+      driver_id INTEGER NOT NULL REFERENCES drivers(id),
+      team_id INTEGER REFERENCES teams(id),
+      position INTEGER,
+      points INTEGER NOT NULL DEFAULT 0,
+      UNIQUE (event_id, driver_id)
+    );
+    CREATE TABLE IF NOT EXISTS result_confirmations (
+      event_id INTEGER NOT NULL REFERENCES events(id),
+      team_id INTEGER NOT NULL REFERENCES teams(id),
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      confirmed_at TIMESTAMP NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (event_id, team_id)
+    );
+    CREATE TABLE IF NOT EXISTS default_grants_applied (
+      role TEXT NOT NULL,
+      permission TEXT NOT NULL,
+      PRIMARY KEY (role, permission)
+    );
     INSERT INTO users (username, password, role) VALUES ('admin@admin.com', 'admin@admin.com', 'admin')
       ON CONFLICT (username) DO UPDATE SET role = 'admin';
   `);
+  for (const [role, permission] of DEFAULT_GRANTS) {
+    const applied = await pool.query(
+      'INSERT INTO default_grants_applied (role, permission) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+      [role, permission],
+    );
+    if (applied.rowCount) {
+      await pool.query(
+        'INSERT INTO role_permissions (role, permission) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+        [role, permission],
+      );
+    }
+  }
 }
