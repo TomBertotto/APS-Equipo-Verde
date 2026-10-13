@@ -55,7 +55,7 @@ export async function initDb() {
     INSERT INTO role_permissions (role, permission)
       SELECT 'team_manager', 'drivers.manage_own'
       WHERE NOT EXISTS (SELECT 1 FROM role_permissions WHERE role = 'team_manager');
-    INSERT INTO users (username, password, role) VALUES ('admin', 'admin', 'admin')
+    INSERT INTO users (username, password, role) VALUES ('admin@admin.com', 'admin@admin.com', 'admin')
       ON CONFLICT (username) DO UPDATE SET role = 'admin';
   `);
 }

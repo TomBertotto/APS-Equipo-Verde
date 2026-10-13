@@ -5,6 +5,7 @@ import { authRouter } from './auth.js';
 import { teamsRouter, driversRouter } from './profiles.js';
 import { accessRouter } from './access.js';
 import { eventsRouter } from './calendar.js';
+import { seedDb } from './seed.js';
 
 const app = express();
 app.use(cors());
@@ -27,4 +28,5 @@ app.use('/events', eventsRouter);
 
 const port = Number(process.env.PORT ?? 3000);
 await initDb();
+await seedDb();
 app.listen(port, () => console.log(`API listening on :${port}`));
