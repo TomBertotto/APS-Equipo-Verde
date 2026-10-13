@@ -10,9 +10,12 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U fia"]
+      # Por TCP: el servidor temporal que crea la base en un volumen nuevo solo escucha por socket
+      test: ["CMD-SHELL", "pg_isready -U fia -h 127.0.0.1"]
       interval: 2s
       retries: 20
+      # La inicialización de un volumen nuevo puede tardar ~1 min; los fallos en ese lapso no cuentan
+      start_period: 120s
 
   backend:
     build: ./backend
