@@ -2,10 +2,11 @@
 
 Simplificamos la implementación para correrlo con docker
 
-Si no está hecho el build
+Si no está hecho el build, o si cambiaron las dependencias (`package.json`):
 ```bash
-docker compose up --build
+docker compose up --build -V
 ```
+(`-V` hace que los contenedores tomen los `node_modules` nuevos; sin eso la app puede fallar con "Unable to resolve module".)
 
 Si está hecho el build:
 ```bash

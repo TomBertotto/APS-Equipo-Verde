@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { router } from 'expo-router';
-import { useContainer } from '../di/container';
+import { useAuth } from './AuthProvider';
 
 export function useRegisterViewModel() {
-  const { authService, tokenStorage } = useContainer();
+  const auth = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -11,18 +11,12 @@ export function useRegisterViewModel() {
   async function register() {
     setError('');
     try {
-      const session = await authService.register(username, password);
-      await tokenStorage.set(session.token);
-      goBack();
+      await auth.register(username, password);
+      router.replace('/');
     } catch (err) {
       setError((err as Error).message);
     }
   }
 
-  function goBack() {
-    if (router.canGoBack()) router.back();
-    else router.replace('/');
-  }
-
-  return { username, setUsername, password, setPassword, error, register, goBack };
+  return { username, setUsername, password, setPassword, error, register };
 }

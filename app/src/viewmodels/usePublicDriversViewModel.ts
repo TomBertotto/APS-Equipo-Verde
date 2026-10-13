@@ -5,6 +5,7 @@ import { Driver, Team } from '../models/ProfilesService';
 export function usePublicDriversViewModel() {
   const { profilesService } = useContainer();
   const [teams, setTeams] = useState<Team[]>([]);
+  // null = todas las escuderías
   const [teamId, setTeamId] = useState<number | null>(null);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
@@ -12,9 +13,7 @@ export function usePublicDriversViewModel() {
 
   async function loadTeams() {
     try {
-      const list = await profilesService.getTeams();
-      setTeams(list);
-      if (list.length && teamId === null) setTeamId(list[0].id);
+      setTeams(await profilesService.getTeams());
       setError('');
     } catch (err) {
       setError((err as Error).message);
@@ -23,9 +22,9 @@ export function usePublicDriversViewModel() {
     }
   }
 
-  async function loadDrivers(id: number) {
+  async function loadDrivers(id: number | null) {
     try {
-      setDrivers(await profilesService.getDrivers(id));
+      setDrivers(await profilesService.getDrivers(id ?? undefined));
       setError('');
     } catch (err) {
       setError((err as Error).message);
@@ -37,7 +36,7 @@ export function usePublicDriversViewModel() {
   }, []);
 
   useEffect(() => {
-    if (teamId !== null) loadDrivers(teamId);
+    loadDrivers(teamId);
   }, [teamId]);
 
   return {
@@ -48,6 +47,6 @@ export function usePublicDriversViewModel() {
     reserves: drivers.filter((d) => d.lineup === 'suplente'),
     loading,
     error,
-    reload: () => (teamId !== null ? loadDrivers(teamId) : loadTeams()),
+    reload: () => loadDrivers(teamId),
   };
 }

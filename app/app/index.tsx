@@ -1,66 +1,76 @@
-import { Button, Text, TextInput, View } from 'react-native';
-import { useAuthViewModel } from '../src/viewmodels/useAuthViewModel';
-import { formStyles as styles } from '../src/views/styles';
+import { StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { useAuth } from '../src/viewmodels/AuthProvider';
+import { useHomeViewModel } from '../src/viewmodels/useHomeViewModel';
+import { AppButton } from '../src/views/AppButton';
+import { Card } from '../src/views/Card';
+import { Screen } from '../src/views/Screen';
+import { BodyText, Label, SectionTitle } from '../src/views/Typography';
+import { colors, fonts, radius, spacing } from '../src/views/theme';
 
 export default function Home() {
-  const vm = useAuthViewModel();
-
-  if (vm.loading) {
-    return (
-      <View style={styles.container}>
-        <Text>Cargando...</Text>
-      </View>
-    );
-  }
-
-  if (vm.currentUser) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.form}>
-          <Text>Sesión iniciada como {vm.currentUser.username}</Text>
-          {vm.can('profiles.manage') ? (
-            <Button title="Administrar perfiles" onPress={vm.goToAdmin} />
-          ) : null}
-          {vm.can('users.manage') ? (
-            <Button title="Usuarios y permisos" onPress={vm.goToAccess} />
-          ) : null}
-          {vm.can('calendar.manage') ? (
-            <Button title="Gestionar calendario" onPress={vm.goToCalendarAdmin} />
-          ) : null}
-          {vm.can('drivers.manage_own') ? (
-            <Button title="Mi escudería" onPress={vm.goToMyTeam} />
-          ) : null}
-          <Button title="Ver calendario" onPress={vm.goToCalendar} />
-          <Button title="Ver pilotos" onPress={vm.goToDrivers} />
-          <Button title="Cerrar sesión" onPress={vm.logout} />
-        </View>
-      </View>
-    );
-  }
+  const auth = useAuth();
+  const vm = useHomeViewModel();
 
   return (
-    <View style={styles.container}>
-      <View style={styles.form}>
-        <TextInput
-          style={styles.input}
-          placeholder="Usuario"
-          autoCapitalize="none"
-          value={vm.username}
-          onChangeText={vm.setUsername}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Contraseña"
-          secureTextEntry
-          value={vm.password}
-          onChangeText={vm.setPassword}
-        />
-        {vm.error ? <Text style={styles.error}>{vm.error}</Text> : null}
-        <Button title="Iniciar sesión" onPress={vm.login} />
-        <Button title="Registrarse" onPress={vm.goToRegister} />
-        <Button title="Ver calendario" onPress={vm.goToCalendar} />
-        <Button title="Ver pilotos" onPress={vm.goToDrivers} />
+    <Screen maxWidth={900}>
+      <View style={styles.hero}>
+        <View style={styles.heroStripe} />
+        <Text style={styles.heroKicker}>Plataforma oficial</Text>
+        <Text style={styles.heroTitle}>FIA CONNECT</Text>
+        <Text style={styles.heroText}>
+          Calendario, escuderías y pilotos del campeonato en un solo lugar.
+        </Text>
+        {auth.currentUser ? (
+          <Text style={styles.heroText}>Hola, {auth.currentUser.username}</Text>
+        ) : auth.loading ? null : (
+          <View style={styles.heroActions}>
+            <AppButton title="Ingresar" onPress={() => router.navigate('/login')} />
+            <AppButton title="Registrarse" variant="light" onPress={() => router.navigate('/register')} />
+          </View>
+        )}
       </View>
-    </View>
+
+      <SectionTitle>Próxima carrera</SectionTitle>
+      <Card>
+        {vm.loading ? (
+          <BodyText muted>Cargando...</BodyText>
+        ) : vm.nextEvent ? (
+          <>
+            <Label>
+              {vm.nextEvent.event_date}
+              {vm.nextEvent.event_time ? ` · ${vm.nextEvent.event_time}` : ''} · {vm.nextEvent.category}
+            </Label>
+            <Text style={styles.eventName}>{vm.nextEvent.name}</Text>
+            <BodyText muted>
+              {[vm.nextEvent.circuit, vm.nextEvent.location].filter(Boolean).join(' · ')}
+            </BodyText>
+          </>
+        ) : (
+          <BodyText muted>No hay carreras programadas.</BodyText>
+        )}
+        <View style={styles.cardAction}>
+          <AppButton title="Ver calendario" variant="secondary" small onPress={() => router.navigate('/calendar')} />
+        </View>
+      </Card>
+    </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  hero: {
+    backgroundColor: colors.dark,
+    borderRadius: radius.md,
+    padding: spacing.lg,
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    overflow: 'hidden',
+  },
+  heroStripe: { position: 'absolute', top: 0, left: 0, right: 0, height: 4, backgroundColor: colors.primary },
+  heroKicker: { fontFamily: fonts.semibold, fontSize: 13, color: colors.primary, textTransform: 'uppercase', letterSpacing: 2 },
+  heroTitle: { fontFamily: fonts.black, fontSize: 40, color: colors.onDark, letterSpacing: 1 },
+  heroText: { fontFamily: fonts.regular, fontSize: 16, color: '#C9C9CF' },
+  heroActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  eventName: { fontFamily: fonts.black, fontSize: 24, color: colors.text, textTransform: 'uppercase' },
+  cardAction: { alignItems: 'flex-start', marginTop: spacing.xs },
+});

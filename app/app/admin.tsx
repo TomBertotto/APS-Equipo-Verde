@@ -1,31 +1,26 @@
-import { Button, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useAuthViewModel } from '../src/viewmodels/useAuthViewModel';
+import { View } from 'react-native';
+import { useAuth } from '../src/viewmodels/AuthProvider';
 import { useTeamsViewModel } from '../src/viewmodels/useTeamsViewModel';
 import { useDriversViewModel } from '../src/viewmodels/useDriversViewModel';
+import { countryName } from '../src/models/countries';
 import { CATEGORIES, LINEUPS, LINEUP_LABELS } from '../src/models/ProfilesService';
+import { AppButton } from '../src/views/AppButton';
+import { Card } from '../src/views/Card';
+import { ListRow } from '../src/views/ListRow';
 import { OptionPicker } from '../src/views/OptionPicker';
-import { formStyles } from '../src/views/styles';
+import { Screen } from '../src/views/Screen';
+import { AccessDenied, Loading } from '../src/views/StatusView';
+import { TextField } from '../src/views/TextField';
+import { ErrorText, Label, SectionTitle } from '../src/views/Typography';
+import { spacing } from '../src/views/theme';
 
 export default function Admin() {
-  const auth = useAuthViewModel();
+  const auth = useAuth();
   const teams = useTeamsViewModel();
   const drivers = useDriversViewModel();
 
-  if (auth.loading) {
-    return (
-      <View style={formStyles.container}>
-        <Text>Cargando...</Text>
-      </View>
-    );
-  }
-
-  if (!auth.can('profiles.manage')) {
-    return (
-      <View style={formStyles.container}>
-        <Text>Acceso denegado</Text>
-      </View>
-    );
-  }
+  if (auth.loading) return <Loading />;
+  if (!auth.can('profiles.manage')) return <AccessDenied />;
 
   async function saveTeam() {
     await teams.save();
@@ -38,65 +33,46 @@ export default function Admin() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.page}>
-      <View style={styles.column}>
-        <Text style={styles.title}>Escuderías</Text>
-        <TextInput
-          style={formStyles.input}
-          placeholder="Nombre"
-          value={teams.name}
-          onChangeText={teams.setName}
-        />
-        <TextInput
-          style={formStyles.input}
-          placeholder="País"
-          value={teams.country}
-          onChangeText={teams.setCountry}
-        />
+    <Screen title="Administrar perfiles">
+      <Card>
+        <SectionTitle>{teams.editingId ? 'Editar escudería' : 'Nueva escudería'}</SectionTitle>
+        <TextField label="Nombre" value={teams.name} onChangeText={teams.setName} />
+        <TextField label="País" value={teams.country} onChangeText={teams.setCountry} />
+        <Label>Categoría</Label>
         <OptionPicker
           options={CATEGORIES.map((c) => ({ label: c, value: c }))}
           selected={teams.category}
           onSelect={teams.setCategory}
         />
-        {teams.error ? <Text style={formStyles.error}>{teams.error}</Text> : null}
-        <Button title={teams.editingId ? 'Guardar cambios' : 'Crear escudería'} onPress={saveTeam} />
-        {teams.editingId ? <Button title="Cancelar" onPress={teams.cancel} /> : null}
-        {teams.teams.map((team) => (
-          <View key={team.id} style={styles.row}>
-            <Text style={styles.rowText}>
-              {team.name} · {team.country} · {team.category}
-            </Text>
-            <Button title="Editar" onPress={() => teams.edit(team)} />
-            <Button title="Eliminar" onPress={() => removeTeam(team.id)} />
-          </View>
-        ))}
+        <ErrorText>{teams.error}</ErrorText>
+        <View style={{ gap: spacing.sm }}>
+          <AppButton title={teams.editingId ? 'Guardar cambios' : 'Crear escudería'} onPress={saveTeam} />
+          {teams.editingId ? <AppButton title="Cancelar" variant="secondary" onPress={teams.cancel} /> : null}
+        </View>
+      </Card>
 
-        <Text style={styles.title}>Pilotos</Text>
-        <TextInput
-          style={formStyles.input}
-          placeholder="Nombre"
-          value={drivers.name}
-          onChangeText={drivers.setName}
-        />
-        <TextInput
-          style={formStyles.input}
-          placeholder="Nacionalidad"
-          value={drivers.nationality}
-          onChangeText={drivers.setNationality}
-        />
-        <TextInput
-          style={formStyles.input}
-          placeholder="Número"
-          keyboardType="numeric"
-          value={drivers.number}
-          onChangeText={drivers.setNumber}
-        />
+      <SectionTitle>Escuderías</SectionTitle>
+      <Card>
+        {teams.teams.map((team) => (
+          <ListRow key={team.id} title={team.name} detail={[team.country, team.category].filter(Boolean).join(' · ')}>
+            <AppButton title="Editar" variant="secondary" small onPress={() => teams.edit(team)} />
+            <AppButton title="Eliminar" variant="danger" small onPress={() => removeTeam(team.id)} />
+          </ListRow>
+        ))}
+      </Card>
+
+      <Card style={{ marginTop: spacing.md }}>
+        <SectionTitle>{drivers.editingId ? 'Editar piloto' : 'Nuevo piloto'}</SectionTitle>
+        <TextField label="Nombre" value={drivers.name} onChangeText={drivers.setName} />
+        <TextField label="País" value={drivers.nationality} onChangeText={drivers.setNationality} />
+        <TextField label="Número" keyboardType="numeric" value={drivers.number} onChangeText={drivers.setNumber} />
+        <Label>Clasificación</Label>
         <OptionPicker
           options={LINEUPS.map((l) => ({ label: LINEUP_LABELS[l], value: l }))}
           selected={drivers.lineup}
           onSelect={drivers.setLineup}
         />
-        <Text>Escudería:</Text>
+        <Label>Escudería</Label>
         <OptionPicker
           options={[
             { label: 'Sin escudería', value: null as number | null },
@@ -105,28 +81,32 @@ export default function Admin() {
           selected={drivers.teamId}
           onSelect={drivers.setTeamId}
         />
-        {drivers.error ? <Text style={formStyles.error}>{drivers.error}</Text> : null}
-        <Button title={drivers.editingId ? 'Guardar cambios' : 'Crear piloto'} onPress={drivers.save} />
-        {drivers.editingId ? <Button title="Cancelar" onPress={drivers.cancel} /> : null}
+        <ErrorText>{drivers.error}</ErrorText>
+        <View style={{ gap: spacing.sm }}>
+          <AppButton title={drivers.editingId ? 'Guardar cambios' : 'Crear piloto'} onPress={drivers.save} />
+          {drivers.editingId ? <AppButton title="Cancelar" variant="secondary" onPress={drivers.cancel} /> : null}
+        </View>
+      </Card>
+
+      <SectionTitle>Pilotos</SectionTitle>
+      <Card>
         {drivers.drivers.map((driver) => (
-          <View key={driver.id} style={styles.row}>
-            <Text style={styles.rowText}>
-              {driver.number ?? '-'} · {driver.name} · {driver.nationality} · {driver.team_name ?? 'Sin escudería'} ·{' '}
-              {LINEUP_LABELS[driver.lineup] ?? driver.lineup}
-            </Text>
-            <Button title="Editar" onPress={() => drivers.edit(driver)} />
-            <Button title="Eliminar" onPress={() => drivers.remove(driver.id)} />
-          </View>
+          <ListRow
+            key={driver.id}
+            title={`${driver.number ?? '-'} · ${driver.name}`}
+            detail={[
+              countryName(driver.nationality),
+              driver.team_name ?? 'Sin escudería',
+              LINEUP_LABELS[driver.lineup] ?? driver.lineup,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          >
+            <AppButton title="Editar" variant="secondary" small onPress={() => drivers.edit(driver)} />
+            <AppButton title="Eliminar" variant="danger" small onPress={() => drivers.remove(driver.id)} />
+          </ListRow>
         ))}
-      </View>
-    </ScrollView>
+      </Card>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  page: { alignItems: 'center', padding: 24 },
-  column: { width: '100%', maxWidth: 500, gap: 8 },
-  title: { fontSize: 18, fontWeight: 'bold', marginTop: 16 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  rowText: { flex: 1 },
-});

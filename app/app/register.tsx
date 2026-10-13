@@ -1,31 +1,34 @@
-import { Button, Text, TextInput, View } from 'react-native';
+import { router } from 'expo-router';
 import { useRegisterViewModel } from '../src/viewmodels/useRegisterViewModel';
-import { formStyles as styles } from '../src/views/styles';
+import { AppButton } from '../src/views/AppButton';
+import { Card } from '../src/views/Card';
+import { Screen } from '../src/views/Screen';
+import { TextField } from '../src/views/TextField';
+import { ErrorText } from '../src/views/Typography';
 
 export default function Register() {
   const vm = useRegisterViewModel();
 
   return (
-    <View style={styles.container}>
-      <View style={styles.form}>
-        <TextInput
-          style={styles.input}
-          placeholder="Usuario"
+    <Screen title="Registrarse" maxWidth={420}>
+      <Card>
+        <TextField
+          label="Usuario"
           autoCapitalize="none"
           value={vm.username}
           onChangeText={vm.setUsername}
         />
-        <TextInput
-          style={styles.input}
-          placeholder="Contraseña"
+        <TextField
+          label="Contraseña"
           secureTextEntry
           value={vm.password}
           onChangeText={vm.setPassword}
+          onSubmitEditing={vm.register}
         />
-        {vm.error ? <Text style={styles.error}>{vm.error}</Text> : null}
-        <Button title="Crear cuenta" onPress={vm.register} />
-        <Button title="Volver" onPress={vm.goBack} />
-      </View>
-    </View>
+        <ErrorText>{vm.error}</ErrorText>
+        <AppButton title="Crear cuenta" onPress={vm.register} />
+        <AppButton title="Ya tengo cuenta" variant="ghost" onPress={() => router.navigate('/login')} />
+      </Card>
+    </Screen>
   );
 }

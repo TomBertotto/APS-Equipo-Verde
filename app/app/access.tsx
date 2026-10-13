@@ -1,29 +1,20 @@
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
-import { useAuthViewModel } from '../src/viewmodels/useAuthViewModel';
+import { StyleSheet, Switch, Text, View } from 'react-native';
+import { useAuth } from '../src/viewmodels/AuthProvider';
 import { useAccessViewModel } from '../src/viewmodels/useAccessViewModel';
 import { PERMISSION_LABELS, ROLE_LABELS } from '../src/models/AccessService';
+import { Card } from '../src/views/Card';
 import { OptionPicker } from '../src/views/OptionPicker';
-import { formStyles } from '../src/views/styles';
+import { Screen } from '../src/views/Screen';
+import { AccessDenied, Loading } from '../src/views/StatusView';
+import { BodyText, ErrorText, Label, SectionTitle } from '../src/views/Typography';
+import { colors, fonts, spacing } from '../src/views/theme';
 
 export default function Access() {
-  const auth = useAuthViewModel();
+  const auth = useAuth();
   const vm = useAccessViewModel();
 
-  if (auth.loading) {
-    return (
-      <View style={formStyles.container}>
-        <Text>Cargando...</Text>
-      </View>
-    );
-  }
-
-  if (!auth.can('users.manage')) {
-    return (
-      <View style={formStyles.container}>
-        <Text>Acceso denegado</Text>
-      </View>
-    );
-  }
+  if (auth.loading) return <Loading />;
+  if (!auth.can('users.manage')) return <AccessDenied />;
 
   const roleOptions = vm.info.roles.map((r) => ({ label: ROLE_LABELS[r] ?? r, value: r }));
   const teamOptions = [
@@ -32,62 +23,57 @@ export default function Access() {
   ];
 
   return (
-    <ScrollView contentContainerStyle={styles.page}>
-      <View style={styles.column}>
-        {vm.error ? <Text style={formStyles.error}>{vm.error}</Text> : null}
+    <Screen title="Usuarios y permisos">
+      <ErrorText>{vm.error}</ErrorText>
 
-        <Text style={styles.title}>Usuarios</Text>
-        {vm.users.map((user) => (
-          <View key={user.id} style={styles.block}>
-            <Text>{user.username}</Text>
-            {user.username === auth.currentUser?.username ? (
-              <Text>{ROLE_LABELS[user.role] ?? user.role}</Text>
-            ) : (
+      <SectionTitle>Usuarios</SectionTitle>
+      {vm.users.map((user) => (
+        <Card key={user.id}>
+          <Text style={styles.username}>{user.username}</Text>
+          {user.username === auth.currentUser?.username ? (
+            <BodyText muted>{ROLE_LABELS[user.role] ?? user.role}</BodyText>
+          ) : (
+            <OptionPicker
+              options={roleOptions}
+              selected={user.role}
+              onSelect={(role) => vm.setUserRole(user.id, role)}
+            />
+          )}
+          {user.role === 'team_manager' ? (
+            <>
+              <Label>Escudería</Label>
               <OptionPicker
-                options={roleOptions}
-                selected={user.role}
-                onSelect={(role) => vm.setUserRole(user.id, role)}
+                options={teamOptions}
+                selected={user.team_id}
+                onSelect={(teamId) => vm.setUserTeam(user.id, teamId)}
               />
-            )}
-            {user.role === 'team_manager' ? (
-              <>
-                <Text>Escudería:</Text>
-                <OptionPicker
-                  options={teamOptions}
-                  selected={user.team_id}
-                  onSelect={(teamId) => vm.setUserTeam(user.id, teamId)}
-                />
-              </>
-            ) : null}
-          </View>
-        ))}
+            </>
+          ) : null}
+        </Card>
+      ))}
 
-        <Text style={styles.title}>Permisos por perfil</Text>
-        {vm.info.roles.map((role) => (
-          <View key={role} style={styles.block}>
-            <Text style={styles.roleName}>{ROLE_LABELS[role] ?? role}</Text>
-            {vm.info.permissions.map((permission) => (
-              <View key={permission} style={styles.row}>
-                <Switch
-                  value={vm.info.grants[role]?.includes(permission) ?? false}
-                  disabled={role === 'admin'}
-                  onValueChange={() => vm.togglePermission(role, permission)}
-                />
-                <Text>{PERMISSION_LABELS[permission] ?? permission}</Text>
-              </View>
-            ))}
-          </View>
-        ))}
-      </View>
-    </ScrollView>
+      <SectionTitle>Permisos por perfil</SectionTitle>
+      {vm.info.roles.map((role) => (
+        <Card key={role}>
+          <Label>{ROLE_LABELS[role] ?? role}</Label>
+          {vm.info.permissions.map((permission) => (
+            <View key={permission} style={styles.row}>
+              <Switch
+                value={vm.info.grants[role]?.includes(permission) ?? false}
+                disabled={role === 'admin'}
+                onValueChange={() => vm.togglePermission(role, permission)}
+                trackColor={{ true: colors.primary, false: colors.border }}
+              />
+              <BodyText>{PERMISSION_LABELS[permission] ?? permission}</BodyText>
+            </View>
+          ))}
+        </Card>
+      ))}
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  page: { alignItems: 'center', padding: 24 },
-  column: { width: '100%', maxWidth: 500, gap: 8 },
-  title: { fontSize: 18, fontWeight: 'bold', marginTop: 16 },
-  block: { borderWidth: 1, padding: 8, gap: 4 },
-  roleName: { fontWeight: 'bold' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  username: { fontFamily: fonts.bold, fontSize: 16, color: colors.text },
 });

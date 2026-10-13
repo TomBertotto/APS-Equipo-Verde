@@ -1,89 +1,60 @@
-import { Button, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useAuthViewModel } from '../src/viewmodels/useAuthViewModel';
+import { View } from 'react-native';
+import { useAuth } from '../src/viewmodels/AuthProvider';
 import { useDriversViewModel } from '../src/viewmodels/useDriversViewModel';
+import { countryName } from '../src/models/countries';
 import { LINEUPS, LINEUP_LABELS } from '../src/models/ProfilesService';
+import { AppButton } from '../src/views/AppButton';
+import { Card } from '../src/views/Card';
+import { ListRow } from '../src/views/ListRow';
 import { OptionPicker } from '../src/views/OptionPicker';
-import { formStyles } from '../src/views/styles';
+import { Screen } from '../src/views/Screen';
+import { AccessDenied, Loading, StatusView } from '../src/views/StatusView';
+import { TextField } from '../src/views/TextField';
+import { ErrorText, Label, SectionTitle } from '../src/views/Typography';
+import { spacing } from '../src/views/theme';
 
 export default function MyTeam() {
-  const auth = useAuthViewModel();
+  const auth = useAuth();
   const teamId = auth.currentUser?.teamId ?? undefined;
   const drivers = useDriversViewModel(teamId);
 
-  if (auth.loading) {
-    return (
-      <View style={formStyles.container}>
-        <Text>Cargando...</Text>
-      </View>
-    );
-  }
-
-  if (!auth.can('drivers.manage_own')) {
-    return (
-      <View style={formStyles.container}>
-        <Text>Acceso denegado</Text>
-      </View>
-    );
-  }
-
-  if (!teamId) {
-    return (
-      <View style={formStyles.container}>
-        <Text>No tenés una escudería asignada</Text>
-      </View>
-    );
-  }
+  if (auth.loading) return <Loading />;
+  if (!auth.can('drivers.manage_own')) return <AccessDenied />;
+  if (!teamId) return <StatusView message="No tenés una escudería asignada" />;
 
   return (
-    <ScrollView contentContainerStyle={styles.page}>
-      <View style={styles.column}>
-        <Text style={styles.title}>Pilotos de {auth.currentUser?.teamName}</Text>
-        <TextInput
-          style={formStyles.input}
-          placeholder="Nombre"
-          value={drivers.name}
-          onChangeText={drivers.setName}
-        />
-        <TextInput
-          style={formStyles.input}
-          placeholder="Nacionalidad"
-          value={drivers.nationality}
-          onChangeText={drivers.setNationality}
-        />
-        <TextInput
-          style={formStyles.input}
-          placeholder="Número"
-          keyboardType="numeric"
-          value={drivers.number}
-          onChangeText={drivers.setNumber}
-        />
+    <Screen title={`Mi escudería · ${auth.currentUser?.teamName}`}>
+      <Card>
+        <SectionTitle>{drivers.editingId ? 'Editar piloto' : 'Nuevo piloto'}</SectionTitle>
+        <TextField label="Nombre" value={drivers.name} onChangeText={drivers.setName} />
+        <TextField label="País" value={drivers.nationality} onChangeText={drivers.setNationality} />
+        <TextField label="Número" keyboardType="numeric" value={drivers.number} onChangeText={drivers.setNumber} />
+        <Label>Clasificación</Label>
         <OptionPicker
           options={LINEUPS.map((l) => ({ label: LINEUP_LABELS[l], value: l }))}
           selected={drivers.lineup}
           onSelect={drivers.setLineup}
         />
-        {drivers.error ? <Text style={formStyles.error}>{drivers.error}</Text> : null}
-        <Button title={drivers.editingId ? 'Guardar cambios' : 'Agregar piloto'} onPress={drivers.save} />
-        {drivers.editingId ? <Button title="Cancelar" onPress={drivers.cancel} /> : null}
+        <ErrorText>{drivers.error}</ErrorText>
+        <View style={{ gap: spacing.sm }}>
+          <AppButton title={drivers.editingId ? 'Guardar cambios' : 'Agregar piloto'} onPress={drivers.save} />
+          {drivers.editingId ? <AppButton title="Cancelar" variant="secondary" onPress={drivers.cancel} /> : null}
+        </View>
+      </Card>
+
+      <SectionTitle>Pilotos</SectionTitle>
+      <Card>
         {drivers.drivers.map((driver) => (
-          <View key={driver.id} style={styles.row}>
-            <Text style={styles.rowText}>
-              {driver.number ?? '-'} · {driver.name} · {driver.nationality} ·{' '}
-              {LINEUP_LABELS[driver.lineup] ?? driver.lineup}
-            </Text>
-            <Button title="Editar" onPress={() => drivers.edit(driver)} />
-            <Button title="Eliminar" onPress={() => drivers.remove(driver.id)} />
-          </View>
+          <ListRow
+            key={driver.id}
+            title={`${driver.number ?? '-'} · ${driver.name}`}
+            detail={[countryName(driver.nationality), LINEUP_LABELS[driver.lineup] ?? driver.lineup].filter(Boolean).join(' · ')}
+          >
+            <AppButton title="Editar" variant="secondary" small onPress={() => drivers.edit(driver)} />
+            <AppButton title="Eliminar" variant="danger" small onPress={() => drivers.remove(driver.id)} />
+          </ListRow>
         ))}
-      </View>
-    </ScrollView>
+      </Card>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  page: { alignItems: 'center', padding: 24 },
-  column: { width: '100%', maxWidth: 500, gap: 8 },
-  title: { fontSize: 18, fontWeight: 'bold', marginTop: 16 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  rowText: { flex: 1 },
-});

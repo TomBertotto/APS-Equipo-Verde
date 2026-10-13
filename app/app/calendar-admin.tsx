@@ -1,120 +1,83 @@
-import { Button, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useAuthViewModel } from '../src/viewmodels/useAuthViewModel';
+import { View } from 'react-native';
+import { useAuth } from '../src/viewmodels/AuthProvider';
 import { useCalendarViewModel } from '../src/viewmodels/useCalendarViewModel';
-import { EVENT_CATEGORIES, EVENT_STATUSES } from '../src/models/CalendarService';
+import { EVENT_CATEGORIES, EVENT_STATUSES, EVENT_STATUS_LABELS } from '../src/models/CalendarService';
+import { AppButton } from '../src/views/AppButton';
+import { Card } from '../src/views/Card';
+import { ListRow } from '../src/views/ListRow';
 import { OptionPicker } from '../src/views/OptionPicker';
-import { formStyles } from '../src/views/styles';
+import { Screen } from '../src/views/Screen';
+import { AccessDenied, Loading } from '../src/views/StatusView';
+import { TextField } from '../src/views/TextField';
+import { ErrorText, Label, SectionTitle } from '../src/views/Typography';
+import { spacing } from '../src/views/theme';
 
 export default function CalendarAdmin() {
-  const auth = useAuthViewModel();
+  const auth = useAuth();
   const vm = useCalendarViewModel();
 
-  if (auth.loading || vm.loading) {
-    return (
-      <View style={formStyles.container}>
-        <Text>Cargando...</Text>
-      </View>
-    );
-  }
-
-  if (!auth.can('calendar.manage')) {
-    return (
-      <View style={formStyles.container}>
-        <Text>Acceso denegado</Text>
-      </View>
-    );
-  }
+  if (auth.loading || vm.loading) return <Loading />;
+  if (!auth.can('calendar.manage')) return <AccessDenied />;
 
   return (
-    <ScrollView contentContainerStyle={styles.page}>
-      <View style={styles.column}>
-        <Text style={styles.title}>Gestión del calendario de carreras y eventos</Text>
-
-        <TextInput
-          style={formStyles.input}
-          placeholder="Nombre del evento"
-          value={vm.name}
-          onChangeText={vm.setName}
-        />
-        <TextInput
-          style={formStyles.input}
-          placeholder="Circuito"
-          value={vm.circuit}
-          onChangeText={vm.setCircuit}
-        />
-        <TextInput
-          style={formStyles.input}
-          placeholder="Localidad"
-          value={vm.location}
-          onChangeText={vm.setLocation}
-        />
-
-        <Text>Categoría:</Text>
+    <Screen title="Gestionar calendario">
+      <Card>
+        <SectionTitle>{vm.editingId ? 'Editar evento' : 'Nuevo evento'}</SectionTitle>
+        <TextField label="Nombre del evento" value={vm.name} onChangeText={vm.setName} />
+        <TextField label="Circuito" value={vm.circuit} onChangeText={vm.setCircuit} />
+        <TextField label="Localidad" value={vm.location} onChangeText={vm.setLocation} />
+        <Label>Categoría</Label>
         <OptionPicker
           options={EVENT_CATEGORIES.map((c) => ({ label: c, value: c }))}
           selected={vm.category}
           onSelect={vm.setCategory}
         />
-
-        <TextInput
-          style={formStyles.input}
-          placeholder="Fecha (YYYY-MM-DD)"
+        <TextField
+          label="Fecha"
+          placeholder="YYYY-MM-DD"
           value={vm.eventDate}
           onChangeText={vm.setEventDate}
         />
-        <TextInput
-          style={formStyles.input}
-          placeholder="Hora (HH:MM)"
-          value={vm.eventTime}
-          onChangeText={vm.setEventTime}
-        />
-
-        <Text>Estado:</Text>
+        <TextField label="Hora" placeholder="HH:MM" value={vm.eventTime} onChangeText={vm.setEventTime} />
+        <Label>Estado</Label>
         <OptionPicker
-          options={EVENT_STATUSES.map((s) => ({ label: s, value: s }))}
+          options={EVENT_STATUSES.map((s) => ({ label: EVENT_STATUS_LABELS[s] ?? s, value: s }))}
           selected={vm.status}
           onSelect={vm.setStatus}
         />
+        <TextField label="Notas" value={vm.notes} multiline numberOfLines={3} onChangeText={vm.setNotes} />
+        <ErrorText>{vm.error}</ErrorText>
+        <View style={{ gap: spacing.sm }}>
+          <AppButton
+            title={vm.editingId ? 'Guardar cambios' : 'Crear evento'}
+            onPress={vm.save}
+            disabled={vm.saving}
+          />
+          {vm.editingId ? <AppButton title="Cancelar" variant="secondary" onPress={vm.cancel} /> : null}
+        </View>
+      </Card>
 
-        <TextInput
-          style={[formStyles.input, styles.multiline]}
-          placeholder="Notas"
-          value={vm.notes}
-          multiline
-          numberOfLines={3}
-          onChangeText={vm.setNotes}
-        />
-
-        {vm.error ? <Text style={formStyles.error}>{vm.error}</Text> : null}
-
-        <Button title={vm.editingId ? 'Guardar cambios' : 'Crear evento'} onPress={vm.save} disabled={vm.saving} />
-        {vm.editingId ? <Button title="Cancelar" onPress={vm.cancel} /> : null}
-
-        <Text style={styles.title}>Eventos</Text>
+      <SectionTitle>Eventos</SectionTitle>
+      <Card>
         {vm.events.map((ev) => (
-          <View key={ev.id} style={styles.row}>
-            <Text style={styles.rowText}>
-              {ev.event_date}
-              {ev.event_time ? ` ${ev.event_time}` : ''} · {ev.name}
-              {ev.circuit ? ` · ${ev.circuit}` : ''}
-              {ev.location ? ` · ${ev.location}` : ''}
-              {ev.category ? ` · ${ev.category}` : ''}
-              {ev.status ? ` · ${ev.status}` : ''}
-            </Text>
-            <Button title="Editar" onPress={() => vm.edit(ev)} />
-            <Button title="Eliminar" onPress={() => vm.remove(ev.id)} />
-          </View>
+          <ListRow
+            key={ev.id}
+            title={ev.name}
+            detail={[
+              `${ev.event_date}${ev.event_time ? ` ${ev.event_time}` : ''}`,
+              ev.circuit,
+              ev.location,
+              ev.category,
+              EVENT_STATUS_LABELS[ev.status] ?? ev.status,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          >
+            <AppButton title="Editar" variant="secondary" small onPress={() => vm.edit(ev)} />
+            <AppButton title="Eliminar" variant="danger" small onPress={() => vm.remove(ev.id)} />
+          </ListRow>
         ))}
-      </View>
-    </ScrollView>
+      </Card>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  page: { alignItems: 'center', padding: 24 },
-  column: { width: '100%', maxWidth: 600, gap: 8 },
-  title: { fontSize: 18, fontWeight: 'bold', marginTop: 16 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  rowText: { flex: 1 },
-  multiline: { height: 80, textAlignVertical: 'top' },
-});
