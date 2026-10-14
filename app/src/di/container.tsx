@@ -3,6 +3,7 @@ import { AccessService } from '../models/AccessService';
 import { CalendarService } from '../models/CalendarService';
 import { ApiClient } from '../models/ApiClient';
 import { AuthService } from '../models/AuthService';
+import { CommunicationsService } from '../models/CommunicationsService';
 import { ProfilesService } from '../models/ProfilesService';
 import { ResultsService } from '../models/ResultsService';
 import { TokenStorage } from '../models/TokenStorage';
@@ -15,6 +16,7 @@ export type Container = {
   accessService: AccessService;
   calendarService: CalendarService;
   resultsService: ResultsService;
+  communicationsService: CommunicationsService;
   tokenStorage: TokenStorage;
 };
 
@@ -27,6 +29,7 @@ const defaultContainer: Container = {
   accessService: new AccessService(apiClient),
   calendarService: new CalendarService(apiClient),
   resultsService: new ResultsService(apiClient),
+  communicationsService: new CommunicationsService(apiClient),
   tokenStorage,
 };
 

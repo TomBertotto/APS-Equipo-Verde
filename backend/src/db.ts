@@ -11,6 +11,7 @@ export const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const DEFAULT_GRANTS: [string, string][] = [
   ['team_manager', 'drivers.manage_own'],
   ['team_manager', 'results.confirm_own'],
+  ['team_manager', 'communications.view_own'],
 ];
 
 export async function initDb() {
@@ -74,6 +75,18 @@ export async function initDb() {
       user_id INTEGER NOT NULL REFERENCES users(id),
       confirmed_at TIMESTAMP NOT NULL DEFAULT NOW(),
       PRIMARY KEY (event_id, team_id)
+    );
+    CREATE TABLE IF NOT EXISTS communications (
+      id SERIAL PRIMARY KEY,
+      subject TEXT NOT NULL,
+      body TEXT NOT NULL,
+      created_by INTEGER REFERENCES users(id),
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS communication_recipients (
+      communication_id INTEGER NOT NULL REFERENCES communications(id) ON DELETE CASCADE,
+      team_id INTEGER NOT NULL REFERENCES teams(id),
+      PRIMARY KEY (communication_id, team_id)
     );
     CREATE TABLE IF NOT EXISTS default_grants_applied (
       role TEXT NOT NULL,

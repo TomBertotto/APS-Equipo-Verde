@@ -38,6 +38,8 @@ export default function RootLayout() {
           <Stack.Screen name="results" options={{ title: 'Resultados' }} />
           <Stack.Screen name="results-admin" options={{ title: 'Cargar resultados' }} />
           <Stack.Screen name="my-results" options={{ title: 'Mis puntajes' }} />
+          <Stack.Screen name="communications-admin" options={{ title: 'Comunicaciones oficiales' }} />
+          <Stack.Screen name="my-communications" options={{ title: 'Comunicaciones' }} />
         </Stack>
       </AuthProvider>
     </ContainerProvider>

@@ -6,6 +6,7 @@ import { teamsRouter, driversRouter } from './profiles.js';
 import { accessRouter } from './access.js';
 import { eventsRouter } from './calendar.js';
 import { resultsRouter } from './results.js';
+import { communicationsRouter } from './communications.js';
 import { seedDb } from './seed.js';
 
 const app = express();
@@ -27,6 +28,7 @@ app.use('/drivers', driversRouter);
 app.use('/access', accessRouter);
 app.use('/events', eventsRouter);
 app.use('/results', resultsRouter);
+app.use('/communications', communicationsRouter);
 
 const port = Number(process.env.PORT ?? 3000);
 await initDb();

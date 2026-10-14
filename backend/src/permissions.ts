@@ -9,6 +9,8 @@ export const PERMISSIONS = [
   'drivers.manage_own',
   'results.manage',
   'results.confirm_own',
+  'communications.send',
+  'communications.view_own',
 ];
 
 export type AuthUser = {
