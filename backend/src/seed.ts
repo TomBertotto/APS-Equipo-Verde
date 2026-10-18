@@ -177,6 +177,49 @@ async function seedResults(client: PoolClient) {
   return true;
 }
 
+const carIdentifier = (team: string, n: number) => `${team} · Auto ${n}`;
+
+async function seedCars(client: PoolClient) {
+  const teams = await client.query('SELECT id, name FROM teams WHERE deleted_at IS NULL ORDER BY id');
+  for (const team of teams.rows) {
+    for (const n of [1, 2]) {
+      await client.query('INSERT INTO cars (team_id, identifier) VALUES ($1, $2)', [
+        team.id,
+        carIdentifier(team.name, n),
+      ]);
+    }
+  }
+}
+
+const CHECKS: { team: string; car: number; type: string; date: string; result: string; notes?: string }[] = [
+  { team: 'Ferrari', car: 1, type: 'min_weight', date: '2026-03-05', result: 'approved' },
+  { team: 'Ferrari', car: 2, type: 'min_weight', date: '2026-03-05', result: 'approved' },
+  { team: 'Ferrari', car: 1, type: 'floor_wear', date: '2026-04-16', result: 'failed', notes: 'Plancha por debajo del espesor mínimo' },
+  { team: 'Ferrari', car: 1, type: 'floor_wear', date: '2026-05-21', result: 'approved', notes: 'Se cambió la plancha y se repitió el control' },
+  { team: 'McLaren', car: 1, type: 'fuel_analysis', date: '2026-03-12', result: 'approved' },
+  { team: 'McLaren', car: 2, type: 'software_electronics', date: '2026-04-02', result: 'failed', notes: 'Versión de software no homologada' },
+  { team: 'McLaren', car: 2, type: 'software_electronics', date: '2026-04-09', result: 'approved' },
+  { team: 'Mercedes', car: 1, type: 'safety_extraction', date: '2026-06-11', result: 'approved' },
+  { team: 'Red Bull Racing', car: 2, type: 'min_weight', date: '2026-07-02', result: 'failed', notes: 'Distribución de peso fuera de tolerancia' },
+  { team: 'Williams', car: 1, type: 'fuel_analysis', date: '2026-08-20', result: 'approved' },
+];
+
+async function seedTechnicalChecks(client: PoolClient) {
+  const admin = await client.query("SELECT id FROM users WHERE username = 'admin@admin.com'");
+  let loaded = 0;
+  for (const c of CHECKS) {
+    const car = await client.query('SELECT id FROM cars WHERE identifier = $1', [carIdentifier(c.team, c.car)]);
+    if (!car.rowCount) continue;
+    await client.query(
+      `INSERT INTO technical_checks (car_id, check_type, check_date, result, notes, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [car.rows[0].id, c.type, c.date, c.result, c.notes ?? '', admin.rows[0]?.id ?? null],
+    );
+    loaded++;
+  }
+  return loaded > 0;
+}
+
 // Cada sección se carga solo si su tabla está vacía, así nunca pisa datos existentes
 export async function seedDb() {
   const teams = await pool.query('SELECT COUNT(*)::int AS count FROM teams');
@@ -191,5 +234,17 @@ export async function seedDb() {
       loaded = await seedResults(client);
     });
     if (loaded) console.log('Resultados de prueba cargados');
+  }
+  const cars = await pool.query('SELECT COUNT(*)::int AS count FROM cars');
+  if (cars.rows[0].count === 0) {
+    await inTransaction(seedCars);
+  }
+  const checks = await pool.query('SELECT COUNT(*)::int AS count FROM technical_checks');
+  if (checks.rows[0].count === 0) {
+    let loaded = false;
+    await inTransaction(async (client) => {
+      loaded = await seedTechnicalChecks(client);
+    });
+    if (loaded) console.log('Controles técnicos de prueba cargados');
   }
 }

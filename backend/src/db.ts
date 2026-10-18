@@ -88,6 +88,22 @@ export async function initDb() {
       team_id INTEGER NOT NULL REFERENCES teams(id),
       PRIMARY KEY (communication_id, team_id)
     );
+    CREATE TABLE IF NOT EXISTS cars (
+      id SERIAL PRIMARY KEY,
+      team_id INTEGER NOT NULL REFERENCES teams(id),
+      identifier TEXT NOT NULL UNIQUE
+    );
+    CREATE TABLE IF NOT EXISTS technical_checks (
+      id SERIAL PRIMARY KEY,
+      car_id INTEGER NOT NULL REFERENCES cars(id),
+      check_type TEXT NOT NULL,
+      check_date DATE NOT NULL,
+      result TEXT NOT NULL,
+      notes TEXT NOT NULL DEFAULT '',
+      created_by INTEGER REFERENCES users(id),
+      created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+      deleted_at TIMESTAMP
+    );
     CREATE TABLE IF NOT EXISTS default_grants_applied (
       role TEXT NOT NULL,
       permission TEXT NOT NULL,

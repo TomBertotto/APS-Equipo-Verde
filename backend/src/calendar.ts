@@ -7,10 +7,14 @@ export const EVENT_STATUSES = ['scheduled', 'completed', 'cancelled', 'postponed
 
 export const eventsRouter = Router();
 
+export function isValidDate(date: unknown) {
+  const parsed = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date) && new Date(`${date}T00:00:00Z`);
+  return !!parsed && !isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date;
+}
+
 function validateEvent(name: unknown, date: unknown, time: unknown) {
   if (typeof name !== 'string' || !name.trim()) return 'El nombre es obligatorio';
-  const parsed = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date) && new Date(`${date}T00:00:00Z`);
-  if (!parsed || isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date) {
+  if (!isValidDate(date)) {
     return 'La fecha del evento es obligatoria y debe ser válida (YYYY-MM-DD)';
   }
   if (time != null && (typeof time !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time))) {

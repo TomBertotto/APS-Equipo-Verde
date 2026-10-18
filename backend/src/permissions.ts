@@ -11,6 +11,7 @@ export const PERMISSIONS = [
   'results.confirm_own',
   'communications.send',
   'communications.view_own',
+  'technical_checks.manage',
 ];
 
 export type AuthUser = {

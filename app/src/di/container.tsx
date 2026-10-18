@@ -6,6 +6,7 @@ import { AuthService } from '../models/AuthService';
 import { CommunicationsService } from '../models/CommunicationsService';
 import { ProfilesService } from '../models/ProfilesService';
 import { ResultsService } from '../models/ResultsService';
+import { TechnicalChecksService } from '../models/TechnicalChecksService';
 import { TokenStorage } from '../models/TokenStorage';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
@@ -17,6 +18,7 @@ export type Container = {
   calendarService: CalendarService;
   resultsService: ResultsService;
   communicationsService: CommunicationsService;
+  technicalChecksService: TechnicalChecksService;
   tokenStorage: TokenStorage;
 };
 
@@ -30,6 +32,7 @@ const defaultContainer: Container = {
   calendarService: new CalendarService(apiClient),
   resultsService: new ResultsService(apiClient),
   communicationsService: new CommunicationsService(apiClient),
+  technicalChecksService: new TechnicalChecksService(apiClient),
   tokenStorage,
 };
 

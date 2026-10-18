@@ -19,5 +19,6 @@ export const NAV_LINKS: NavLink[] = [
   { href: '/calendar-admin', label: 'Gestionar calendario', permission: 'calendar.manage' },
   { href: '/results-admin', label: 'Cargar resultados', permission: 'results.manage' },
   { href: '/communications-admin', label: 'Enviar comunicaciones', permission: 'communications.send' },
+  { href: '/technical-checks-admin', label: 'Gestionar controles', permission: 'technical_checks.manage' },
   { href: '/access', label: 'Usuarios', permission: 'users.manage' },
 ];
