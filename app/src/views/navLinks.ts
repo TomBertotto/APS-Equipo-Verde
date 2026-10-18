@@ -7,6 +7,7 @@ export const NAV_LINKS: NavLink[] = [
   { href: '/calendar', label: 'Calendario' },
   { href: '/drivers', label: 'Pilotos' },
   { href: '/results', label: 'Resultados' },
+  { href: '/technical-checks', label: 'Controles técnicos' },
   { href: '/my-team', label: 'Mi escudería', permission: 'drivers.manage_own', requiresTeam: true },
   { href: '/my-results', label: 'Mis puntajes', permission: 'results.confirm_own', requiresTeam: true },
   {

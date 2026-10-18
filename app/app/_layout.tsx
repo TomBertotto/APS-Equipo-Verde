@@ -40,6 +40,7 @@ export default function RootLayout() {
           <Stack.Screen name="my-results" options={{ title: 'Mis puntajes' }} />
           <Stack.Screen name="communications-admin" options={{ title: 'Comunicaciones oficiales' }} />
           <Stack.Screen name="my-communications" options={{ title: 'Comunicaciones' }} />
+          <Stack.Screen name="technical-checks" options={{ title: 'Controles técnicos' }} />
           <Stack.Screen name="technical-checks-admin" options={{ title: 'Gestionar controles técnicos' }} />
         </Stack>
       </AuthProvider>
